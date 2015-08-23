@@ -1,128 +1,169 @@
 class StartsWithUppercase(object):
     def __init__(self):
         pass
+    
+    def convert_sentence(sentence):
+        result = []
+        for token in sentence.tokens:
+            result.append("swu=%d" % (int(word[token].istitle())))
+        return result
 
 class TokenLength(object):
     def __init__(self):
         pass
 
-    if "l" in activeFeatures:
-        features.append('l=' + str(min(len(word), 30)))
+    def convert_sentence(sentence):
+        result = []
+        for token in sentence.tokens:
+            result.append("l=%d" % (min(len(word), 30)))
+        return result
 
 class ContainsDigits(object):    
     def __init__(self):
         pass
 
-    # contains digits
-    if "cD" in activeFeatures:
-        features.append('cD=' + str(int(regexpContainsDigits.search(word) is not None)))
+    def convert_sentence(sentence):
+        result = []
+        for token in sentence.tokens:
+            result.append("cD=%d" % (int(regexpContainsDigits.search(word) is not None)))
+        return result
     
 class ContainsPunctuation(object):
     def __init__(self):
         pass
 
-    # contains punctuation
-    if "cP" in activeFeatures:
-        features.append('cP=' + str(int(regexpContainsPunctuation.search(word) is not None)))
+    def convert_sentence(sentence):
+        result = []
+        for token in sentence.tokens:
+            result.append("cP=%d" % (int(regexpContainsPunctuation.search(word) is not None)))
+        return result
 
 class OnlyDigits(object):
     def __init__(self):
         pass
 
-    # contains only digits
-    if "oD" in activeFeatures:
-        features.append('oD=' + str(int(regexpContainsOnlyDigits.search(word) is not None)))
+    def convert_sentence(sentence):
+        result = []
+        for token in sentence.tokens:
+            result.append("oD=%d" % (int(regexpContainsOnlyDigits.search(word) is not None)))
+        return result
 
 class OnlyPunctuation(object):
     def __init__(self):
         pass
 
-    # contains only punctuation
-    if "oP" in activeFeatures:
-        features.append('oP=' + str(int(regexpContainsOnlyPunctuation.search(word) is not None)))
+    def convert_sentence(sentence):
+        result = []
+        for token in sentence.tokens:
+            result.append("oP=%d" % (int(regexpContainsOnlyPunctuation.search(word) is not None)))
+        return result
 
 class W2VCluster(object):
     def __init__(self):
         pass
 
-    # w2v cluster
-    if "w2v" in activeFeatures:
-        features.append('w2v=' + str(w2vCluster))
+    def convert_sentence(sentence):
+        result = []
+        for token in sentence.tokens:
+            result.append("w2v=%d" % (self.token_to_cluster(token)))
+        return result
 
 class BrownCluster(object):
     def __init__(self):
         pass
 
-    # brown cluster
-    if "bc" in activeFeatures:
-        features.append('bc=' + str(brownCluster))
+    def convert_sentence(sentence):
+        result = []
+        for token in sentence.tokens:
+            result.append("bc=%d" % (self.token_to_cluster(token)))
+        return result
 
 class BrownClusterBits(object):
     def __init__(self):
         pass
 
-    # brown cluster bits
-    if "bcb" in activeFeatures:
-        features.append('bcb=' + str(brownClusterBits[0:7]))
+    def convert_sentence(sentence):
+        result = []
+        for token in sentence.tokens:
+            result.append("bcb=%s" % (self.token_to_bitchain(token)[0:7]))
+        return result
 
 class Gazzetteer(object):
     def __init__(self):
         pass
-
-    # is in gazetta
-    if "g" in activeFeatures:
-        features.append('g=' + str(isInGazetta))
+    
+    def convert_sentence(sentence):
+        result = []
+        for token in sentence.tokens:
+            result.append("g=%d" % (int(self.is_in_gazetteer(token))))
+        return result
 
 class WordPattern(object):
     def __init__(self):
         pass
 
-    # word pattern
-    if "wp" in activeFeatures:
-        features.append('wp=' + str(wordPattern))
+    def convert_sentence(sentence):
+        result = []
+        for token in sentence.tokens:
+            result.append("wp=%s" % (self.token_to_wordpattern(token)))
+        return result
 
 class UnigramRank(object):
     def __init__(self):
         pass
 
-    # unigram pos
-    if "ng1" in activeFeatures:
-        features.append('ng1=' + str(unigramPos))
+    def convert_sentence(sentence):
+        result = []
+        for token in sentence.tokens:
+            result.append("ng1=%d" % (self.token_to_rank(token)))
+        return result
 
 class Prefix(object):
     def __init__(self):
         pass
 
-    # prefix
-    if "pf" in activeFeatures:
-        features.append('pf=' + str(re.sub(r'[^a-zA-ZäöüÄÖÜß\.\,\!\?]', '#', word[0:3])))
+    def convert_sentence(sentence):
+        result = []
+        for token in sentence.tokens:
+            prefix = re.sub(r'[^a-zA-ZäöüÄÖÜß\.\,\!\?]', '#', word[0:3])
+            result.append("pf=%s" % (prefix))
+        return result
 
 class Suffix(object):
     def __init__(self):
         pass
 
-    # suffix
-    if "sf" in activeFeatures:
-        features.append('sf=' + str(re.sub(r'[^a-zA-ZäöüÄÖÜß\.\,\!\?]', '#', word[-3:])))
+    def convert_sentence(sentence):
+        result = []
+        for token in sentence.tokens:
+            suffix = re.sub(r'[^a-zA-ZäöüÄÖÜß\.\,\!\?]', '#', word[-3:])
+            result.append("sf=%s" % (prefix))
+        return result
 
 class POSTag(object):
     def __init__(self):
         pass
 
-    # pos tag
-    if "pos" in activeFeatures:
-        features.append('pos=' + str(posTags[i]))
+    def convert_sentence(sentence):
+        pos = self.stanford_pos_tag(sentence)
+        result = []
+        for i, token in enumerate(sentence.tokens):
+            result.append("pos=%s" % (pos[i]))
+        return result
 
 class LDATopic(object):
     def __init__(self):
         pass
 
-    # LDA
-    if "lda" in activeFeatures:
-        startLda = max(0,         i - LDA_WINDOW_LEFT_WORDS)
-        endLda   = min(len(sent), i + LDA_WINDOW_RIGHT_WORDS + 1)
-        textLda  = " ".join(chunkTokensOrig[startLda : endLda])
-        ldaTopics = getLDATopicsOf(textLda)
-        for (topicIndex, probability) in ldaTopics:
-            feature = 'lda%d=%d'.format(topicIndex, int(round(probability, 1)))
-            features.append(feature)
+    def convert_sentence(sentence):
+        pos = self.stanford_pos_tag(sentence)
+        result = []
+        for i, token in enumerate(sentence.tokens):
+            start = max(0, i - LDA_WINDOW_LEFT_WORDS)
+            end = min(len(sentence), i + LDA_WINDOW_RIGHT_WORDS + 1)
+            text = " ".join(sentence[start:end])
+            topics = self.get_topics_of(text)
+            for (topic_idx, prob) in topics:
+                if prob > 0.75:
+                    result.append("lda_%d=%s" % (topic_idx, "1"))
+        return result
