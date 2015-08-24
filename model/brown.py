@@ -9,6 +9,7 @@ class BrownClusterDict():
     
     def clear(self):
         self.word_to_cluster = dict()
+        self.word_to_bitchain = dict()
     
     def fill_from_file(self, filepath):
         with open(filepath, "r") as f:
