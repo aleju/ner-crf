@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-class UnigramDict():
+class Unigrams():
     def __init__(self, filepath, skip_first_n=0, max_count_words=None):
         self.word_to_rank = dict()
         self.word_to_count = dict()

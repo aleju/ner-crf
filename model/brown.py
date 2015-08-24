@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-class BrownClusterDict():
+class BrownClusters():
     def __init__(self, filepath):
         self.word_to_cluster = dict()
         self.word_to_bitchain = dict()

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-class W2VClusterDict():
+class W2VClusters():
     def __init__(self, filepath):
         self.word_to_cluster = dict()
         self.fill_from_file(filepath)
