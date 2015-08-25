@@ -20,42 +20,42 @@ class TokenLength(object):
 
 class ContainsDigits(object):    
     def __init__(self):
-        pass
+        self.regexpContainsDigits = 
 
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            result.append("cD=%d" % (int(regexpContainsDigits.search(word) is not None)))
+            result.append("cD=%d" % (int(self.regexpContainsDigits.search(word) is not None)))
         return result
     
 class ContainsPunctuation(object):
     def __init__(self):
-        pass
+        self.regexpContainsPunctuation = 
 
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            result.append("cP=%d" % (int(regexpContainsPunctuation.search(word) is not None)))
+            result.append("cP=%d" % (int(self.regexpContainsPunctuation.search(word) is not None)))
         return result
 
 class OnlyDigits(object):
     def __init__(self):
-        pass
+        self.regexpContainsOnlyDigits = 
 
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            result.append("oD=%d" % (int(regexpContainsOnlyDigits.search(word) is not None)))
+            result.append("oD=%d" % (int(self.regexpContainsOnlyDigits.search(word) is not None)))
         return result
 
 class OnlyPunctuation(object):
     def __init__(self):
-        pass
+        self.regexpContainsOnlyPunctuation = 
 
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            result.append("oP=%d" % (int(regexpContainsOnlyPunctuation.search(word) is not None)))
+            result.append("oP=%d" % (int(self.regexpContainsOnlyPunctuation.search(word) is not None)))
         return result
 
 class W2VCluster(object):
@@ -67,6 +67,9 @@ class W2VCluster(object):
         for token in sentence.tokens:
             result.append("w2v=%d" % (self.token_to_cluster(token)))
         return result
+    
+    def token_to_cluster(token):
+        pass
 
 class BrownCluster(object):
     def __init__(self):
@@ -77,6 +80,9 @@ class BrownCluster(object):
         for token in sentence.tokens:
             result.append("bc=%d" % (self.token_to_cluster(token)))
         return result
+    
+    def token_to_cluster(token):
+        pass
 
 class BrownClusterBits(object):
     def __init__(self):
@@ -87,6 +93,9 @@ class BrownClusterBits(object):
         for token in sentence.tokens:
             result.append("bcb=%s" % (self.token_to_bitchain(token)[0:7]))
         return result
+    
+    def token_to_bitchain(token):
+        pass
 
 class Gazzetteer(object):
     def __init__(self):
@@ -97,6 +106,9 @@ class Gazzetteer(object):
         for token in sentence.tokens:
             result.append("g=%d" % (int(self.is_in_gazetteer(token))))
         return result
+    
+    def is_in_gazetteer(token):
+        pass
 
 class WordPattern(object):
     def __init__(self):
@@ -117,6 +129,9 @@ class UnigramRank(object):
         for token in sentence.tokens:
             result.append("ng1=%d" % (self.token_to_rank(token)))
         return result
+    
+    def token_to_rank(token):
+        pass
 
 class Prefix(object):
     def __init__(self):
@@ -150,13 +165,15 @@ class POSTag(object):
         for i, token in enumerate(sentence.tokens):
             result.append("pos=%s" % (pos[i]))
         return result
+    
+    def stanford_pos_tag(sentence):
+        pass
 
 class LDATopic(object):
     def __init__(self):
         pass
 
     def convert_sentence(sentence):
-        pos = self.stanford_pos_tag(sentence)
         result = []
         for i, token in enumerate(sentence.tokens):
             start = max(0, i - LDA_WINDOW_LEFT_WORDS)
@@ -167,3 +184,6 @@ class LDATopic(object):
                 if prob > 0.75:
                     result.append("lda_%d=%s" % (topic_idx, "1"))
         return result
+    
+    def get_topics_of(sentence):
+        pass

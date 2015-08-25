@@ -1,4 +1,5 @@
-from __future__ import print_function, division
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 def load_articles(start_at=0, filepath):
     skipped = 0
@@ -31,7 +32,6 @@ def articles_to_xy(articles_gen, chunk_size, every_nth=1, prefer_labeled_chunks=
                 if not prefer_labeled_chunks or counts_chunk.sum > 0:
                     sentence = Sentence([Token(token) for token in token_chunk])
                     #(features, labels, tokens_orig, tokens_unicode, tokens_ascii) = text_to_xy(token_chunk, active_features=active_features)
-                    for 
                     yield (features, labels, tokens_unicode)
                 nth += 1
 
