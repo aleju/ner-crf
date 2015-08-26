@@ -38,8 +38,5 @@ class Gazetteer():
                 if frac_names > frac_unigrams:
                     self.gazetteer.add(name)
     
-    def is_in_gazetteer(self, word, default=-1):
-        if word in self.gazetteer:
-            return self.gazetteer[word]
-        else:
-            return default
+    def is_in_gazetteer(self, word):
+        return (word in self.gazetteer)

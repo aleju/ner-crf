@@ -1,6 +1,21 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+BROWN_CLUSTERS_FILEPATH = ""
+UNIGRAMS_NAMES_FILEPATH = ""
+UNIGRAMS_FILEPATH = ""
+LDA_FILEPATH = ""
+LDA_DICTIONARY_FILEPATH = ""
+LDA_CACHE_MAX_SIZE = 0
+STANFORD_POS_JAR_FILEPATH = ""
+STANFORD_MODEL_FILEPATH = ""
+POS_TAGGER_CACHE_DIR = None
+UNIGRAMS_SKIP_FIRST_N = 0
+UNIGRAMS_MAX_COUNT_WORDS = None
+W2V_CLUSTERS_FILEPATH = ""
+LDA_WINDOW_LEFT_SIZE = 5
+LDA_WINDOW_RIGHT_SIZE = 5
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("identifier",
@@ -28,30 +43,30 @@ def main():
     trainer.train(identifier)
 
 def create_features():
-    bc = BrownClusters(filepath)
-    gaz = Gazetteer(unigrams_names_filepath, unigrams_filepath)
-    lda = LdaWrapper(lda_filepath, dictionary_filepath, cache_max_size=0)
-    pos = PosTagger(stanford_postagger_jar_filepath, stanford_model_filepath, cache_dir=None)
-    ug = Unigrams(filepath, skip_first_n=0, max_count_words=None)
-    w2vc = W2VClusters(filepath)
+    bc = BrownClusters(BROWN_CLUSTERS_FILEPATH)
+    gaz = Gazetteer(UNIGRAMS_NAMES_FILEPATH, UNIGRAMS_FILEPATH)
+    lda = LdaWrapper(LDA_FILEPATH, LDA_DICTIONARY_FILEPATH, cache_max_size=LDA_CACHE_MAX_SIZE)
+    pos = PosTagger(STANFORD_POS_JAR_FILEPATH, STANFORD_MODEL_FILEPATH, cache_dir=POS_TAGGER_CACHE_DIR)
+    ug = Unigrams(UNIGRAMS_FILEPATH, skip_first_n=UNIGRAMS_SKIP_FIRST_N, max_count_words=UNIGRAMS_MAX_COUNT_WORDS)
+    w2vc = W2VClusters(W2V_CLUSTERS_FILEPATH)
     
     result = [
-        StartsWithUppercase(),
-        TokenLength(),
-        ContainsDigits(),
-        ContainsPunctuation(),
-        OnlyDigits(),
-        OnlyPunctuation(),
-        W2VCluster(),
-        BrownCluster(),
-        BrownClusterBits(),
-        Gazzetteer(),
-        WordPattern(),
-        UnigramRank(),
-        Prefix(),
-        Suffix(),
-        POSTag(),
-        LDATopic()
+        StartsWithUppercaseFeature(),
+        TokenLengthFeature(),
+        ContainsDigitsFeature(),
+        ContainsPunctuationFeature(),
+        OnlyDigitsFeature(),
+        OnlyPunctuationFeature(),
+        W2VClusterFeature(w2vc),
+        BrownClusterFeature(bc),
+        BrownClusterBitsFeature(bc),
+        GazetteerFeature(gaz),
+        WordPatternFeature(),
+        UnigramRankFeature(ug),
+        PrefixFeature(),
+        SuffixFeature(),
+        POSTagFeature(pos),
+        LDATopicFeature(lda, LDA_WINDOW_LEFT_SIZE, LDA_WINDOW_LEFT_SIZE)
     ]
     return result
 

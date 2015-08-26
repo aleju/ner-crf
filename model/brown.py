@@ -35,7 +35,7 @@ class BrownClusters():
         else:
             return default
 
-    def get_bitchain_of(self, word, default=-1):
+    def get_bitchain_of(self, word, default=""):
         if word in self.word_to_bitchain:
             return self.word_to_bitchain[word]
         else:
