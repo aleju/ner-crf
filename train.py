@@ -25,7 +25,8 @@ def main():
     trainer = pycrfsuite.Trainer(verbose=True)
     
     print("Loading examples...")
-    examples = load_xy(preferLabeledChunks=True)
+    features = create_features()
+    examples = articles_to_xy(load_articles(ARTICLES_FILEPATH), 50, features, preferLabeledChunks=True)
     
     print("Appending up to %d examples...".format(COUNT_EXAMPLES))
     added = 0
@@ -68,6 +69,7 @@ def create_features():
         POSTagFeature(pos),
         LDATopicFeature(lda, LDA_WINDOW_LEFT_SIZE, LDA_WINDOW_LEFT_SIZE)
     ]
+    
     return result
 
 if __name__ == "__main__":

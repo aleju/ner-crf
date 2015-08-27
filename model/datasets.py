@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-def load_articles(start_at=0, filepath):
+def load_articles(filepath, start_at=0):
     skipped = 0
-    with open(filepath, 'rU') as f:
+    with open(filepath, "r") as f:
         for article in f:
             article = article.decode("utf-8").strip()
             
@@ -11,19 +11,19 @@ def load_articles(start_at=0, filepath):
                 if skipped < start_at:
                     skipped += 1
                 else:
-                    yield article
+                    yield Article(article)
 
-def articles_to_xy(articles_gen, chunk_size, every_nth=1, prefer_labeled_chunks=False, active_features=None):
+def articles_to_xy(articles_gen, chunk_size, features, every_nth=1, prefer_labeled_chunks=False):
     processedArticlesSoFar = 0
     nth = 0
 
     for article in articles_gen:
-        tokens = article.split(" ")
-        counts = count_tags(article)
+        counts = article.get_label_counts()
+        counts_sum = sum([count[1] for count in counts])
         
-        if counts / len(tokens) >= 0.10:
+        if counts_sum / len(article.tokens) >= 0.10:
             pass
-        elif prefer_labeled_chunks and counts.sum == 0:
+        elif prefer_labeled_chunks and counts_sum == 0:
             pass
         else:
             token_chunks = to_chunks(tokens, chunk_size)
@@ -31,10 +31,12 @@ def articles_to_xy(articles_gen, chunk_size, every_nth=1, prefer_labeled_chunks=
                 counts_chunk = count_tags(" ".join(token_chunk))
                 if not prefer_labeled_chunks or counts_chunk.sum > 0:
                     sentence = Sentence([Token(token) for token in token_chunk])
-                    #(features, labels, tokens_orig, tokens_unicode, tokens_ascii) = text_to_xy(token_chunk, active_features=active_features)
-                    yield (features, labels, tokens_unicode)
+                    windows = sentence.to_feature_windows(features)
+                    for window in windows:
+                        yield window
                 nth += 1
 
+"""
 def tokens_to_xy(tokens, window_left, window_right, active_features=None):
     tokensOrig = []
     tokensInUnicode = []
@@ -65,6 +67,19 @@ def tokens_to_xy(tokens, window_left, window_right, active_features=None):
     features = tokens2features(tokens, tokensInUnicode, windowLeftSize, windowRightSize, activeFeatures=activeFeatures)
 
     return (features, labels, tokensInUnicode, tokens)
+"""
+
+class Article(object):
+    def __init__(self, text):
+        text = re.sub(r"[ ]+", " ", text)
+        self.tokens = [Token(token_str) for token_str in text.split(" ")]
+    
+    def get_label_counts(add_no_ne_label=False):
+        counts = defaultdict(0)
+        for token in tokens:
+            if token.label != NO_NE_LABEL or add_no_ne_label:
+                counts[token.label] += 1
+        return counts.iteritems()
 
 class Token(object):
     def __init__(self, original):
@@ -83,13 +98,18 @@ class Sentence(object):
     def __init__(self, tokens):
         self.tokens = tokens
 
-    def get_feature_windows(window_left_size, window_right_size, active_features=None):
-        
+    def to_feature_values(features):
+        values_lists = [feature.convert_sentence(self) for feature in features]
+        result = []
+        for i in range(len(self.tokens)):
+            items = []
+            for values_list in values_lists:
+                if len(values_list) > 0:
+                    item.extend(values_list)
+            result.append(items)
+        return result
 
-class FeatureWindow(object):
-    def __init__(self, tokens, features):
-        
-
+"""
 def count_tags(article_str):
     counts = {"PER": article_str.count("/PER"),
               "LOC": article_str.count("/LOC"),
@@ -98,3 +118,4 @@ def count_tags(article_str):
     counts["max"] = max([count for count in counts.itervalues()])
     counts["sum"] = sum([count for count in counts.itervalues()])
     return counts
+"""
