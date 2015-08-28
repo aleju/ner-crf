@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+def split_to_chunks(of, chunk_size):
+    assert of is not None
+
+    for i in range(0, len(of), chunk_size):
+        yield of[i:i + chunk_size]
+
 def load_articles(filepath, start_at=0):
     skipped = 0
     with open(filepath, "r") as f:
@@ -13,7 +19,7 @@ def load_articles(filepath, start_at=0):
                 else:
                     yield Article(article)
 
-def articles_to_xy(articles_gen, chunk_size, features, every_nth=1, prefer_labeled_chunks=False):
+def articles_to_xy(articles_gen, chunk_size, features, every_nth=1, only_labeled_chunks=False):
     processedArticlesSoFar = 0
     nth = 0
 
@@ -23,17 +29,16 @@ def articles_to_xy(articles_gen, chunk_size, features, every_nth=1, prefer_label
         
         if counts_sum / len(article.tokens) >= 0.10:
             pass
-        elif prefer_labeled_chunks and counts_sum == 0:
+        elif only_labeled_chunks and counts_sum == 0:
             pass
         else:
-            token_chunks = to_chunks(tokens, chunk_size)
+            token_chunks = split_to_chunks(tokens, chunk_size)
             for token_chunk in token_chunks:
                 counts_chunk = count_tags(" ".join(token_chunk))
                 if not prefer_labeled_chunks or counts_chunk.sum > 0:
                     sentence = Sentence([Token(token) for token in token_chunk])
-                    windows = sentence.to_feature_windows(features)
-                    for window in windows:
-                        yield window
+                    sentence.apply_features(features)
+                    yield sentence
                 nth += 1
 
 """
@@ -93,21 +98,29 @@ class Token(object):
             self.word = original
             self.label = NO_NE_LABEL
         self.word_ascii = cleanupUnicode(self.word)
+        self.features_values = None
 
 class Sentence(object):
     def __init__(self, tokens):
         self.tokens = tokens
 
-    def to_feature_values(features):
-        values_lists = [feature.convert_sentence(self) for feature in features]
-        result = []
-        for i in range(len(self.tokens)):
-            items = []
-            for values_list in values_lists:
-                if len(values_list) > 0:
-                    item.extend(values_list)
-            result.append(items)
-        return result
+    def apply_features(features):
+        # returns a multi-dimensional list
+        # 1st dimension: Feature (class)
+        # 2nd dimension: token
+        # 3rd dimension: values (for this token and feature, usually just one value, sometimes more,
+        #                        e.g. "w2vc=975")
+        features_values = [feature.convert_sentence(self) for feature in features]
+        
+        for token in self.tokens:
+            token.features_values = []
+        
+        for feature_values in features_values:
+            assert type(feature_values) == type(list())
+            assert len(feature_values) == len(self.tokens)
+            
+            for token_idx in range(len(self.tokens)):
+                self.tokens[token_idx].features_values.extend(feature_values[token_idx])
 
 """
 def count_tags(article_str):

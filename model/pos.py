@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import nltk
 
 class PosTagger():
-    def __init__(stanford_postagger_jar_filepath, stanford_model_filepath, cache_dir=None):
+    def __init__(stanford_postagger_jar_filepath, stanford_model_filepath, cache_filepath=None):
         self.cache_synch_prob = 2 # in percent, 1 to 100
         self.max_string_length = 2000
         self.min_string_length = 1
@@ -11,8 +11,8 @@ class PosTagger():
         self.tagger = nltk.tag.stanford.POSTagger(stanford_postagger_jar_filepath,
                                                   stanford_model_filepath,
                                                   encoding="utf-8")
-        self.cache_dir = cache_dir
-        self.cache = shelve.open(cache_dir) if cache_dir is not None else None
+        self.cache_filepath = cache_filepath
+        self.cache = shelve.open(cache_filepath) if cache_filepath is not None else None
     
     def tag(tokens):
         if self.cache is None:

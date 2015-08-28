@@ -5,7 +5,7 @@ class StartsWithUppercaseFeature(object):
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            result.append("swu=%d" % (int(word[token].istitle())))
+            result.append(["swu=%d" % (int(word[token].istitle()))])
         return result
 
 class TokenLengthFeature(object):
@@ -15,7 +15,7 @@ class TokenLengthFeature(object):
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            result.append("l=%d" % (min(len(word), self.max_length)))
+            result.append(["l=%d" % (min(len(word), self.max_length))])
         return result
 
 class ContainsDigitsFeature(object):    
@@ -25,7 +25,7 @@ class ContainsDigitsFeature(object):
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            result.append("cD=%d" % (int(self.regexpContainsDigits.search(word) is not None)))
+            result.append(["cD=%d" % (int(self.regexpContainsDigits.search(word) is not None))])
         return result
     
 class ContainsPunctuationFeature(object):
@@ -35,7 +35,7 @@ class ContainsPunctuationFeature(object):
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            result.append("cP=%d" % (int(self.regexpContainsPunctuation.search(word) is not None)))
+            result.append(["cP=%d" % (int(self.regexpContainsPunctuation.search(word) is not None))])
         return result
 
 class OnlyDigitsFeature(object):
@@ -45,7 +45,7 @@ class OnlyDigitsFeature(object):
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            result.append("oD=%d" % (int(self.regexpContainsOnlyDigits.search(word) is not None)))
+            result.append(["oD=%d" % (int(self.regexpContainsOnlyDigits.search(word) is not None))])
         return result
 
 class OnlyPunctuationFeature(object):
@@ -55,7 +55,7 @@ class OnlyPunctuationFeature(object):
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            result.append("oP=%d" % (int(self.regexpContainsOnlyPunctuation.search(word) is not None)))
+            result.append(["oP=%d" % (int(self.regexpContainsOnlyPunctuation.search(word) is not None))])
         return result
 
 class W2VClusterFeature(object):
@@ -65,7 +65,7 @@ class W2VClusterFeature(object):
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            result.append("w2v=%d" % (self.token_to_cluster(token)))
+            result.append(["w2v=%d" % (self.token_to_cluster(token))])
         return result
     
     def token_to_cluster(token):
@@ -78,7 +78,7 @@ class BrownClusterFeature(object):
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            result.append("bc=%d" % (self.token_to_cluster(token)))
+            result.append(["bc=%d" % (self.token_to_cluster(token))])
         return result
     
     def token_to_cluster(token):
@@ -91,7 +91,7 @@ class BrownClusterBitsFeature(object):
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            result.append("bcb=%s" % (self.token_to_bitchain(token)[0:7]))
+            result.append(["bcb=%s" % (self.token_to_bitchain(token)[0:7])])
         return result
     
     def token_to_bitchain(token):
@@ -104,7 +104,7 @@ class GazetteerFeature(object):
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            result.append("g=%d" % (int(self.is_in_gazetteer(token))))
+            result.append(["g=%d" % (int(self.is_in_gazetteer(token)))])
         return result
     
     def is_in_gazetteer(token):
@@ -136,7 +136,7 @@ class WordPatternFeature(object):
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            result.append("wp=%s" % (self.token_to_wordpattern(token)))
+            result.append(["wp=%s" % (self.token_to_wordpattern(token))])
         return result
     
     def token_to_wordpattern(token):
@@ -160,7 +160,7 @@ class UnigramRankFeature(object):
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            result.append("ng1=%d" % (self.token_to_rank(token)))
+            result.append(["ng1=%d" % (self.token_to_rank(token))])
         return result
     
     def token_to_rank(token):
@@ -174,7 +174,7 @@ class PrefixFeature(object):
         result = []
         for token in sentence.tokens:
             prefix = re.sub(r'[^a-zA-ZäöüÄÖÜß\.\,\!\?]', '#', word[0:3])
-            result.append("pf=%s" % (prefix))
+            result.append(["pf=%s" % (prefix)])
         return result
 
 class SuffixFeature(object):
@@ -185,7 +185,7 @@ class SuffixFeature(object):
         result = []
         for token in sentence.tokens:
             suffix = re.sub(r'[^a-zA-ZäöüÄÖÜß\.\,\!\?]', '#', word[-3:])
-            result.append("sf=%s" % (prefix))
+            result.append(["sf=%s" % (prefix)])
         return result
 
 class POSTagFeature(object):
@@ -196,7 +196,7 @@ class POSTagFeature(object):
         pos_tags = self.stanford_pos_tag(sentence)
         result = []
         for i, token in enumerate(sentence.tokens):
-            result.append("pos=%s" % (pos_tags[i]))
+            result.append(["pos=%s" % (pos_tags[i])])
         return result
     
     def stanford_pos_tag(sentence):
@@ -212,6 +212,7 @@ class LDATopicFeature(object):
     def convert_sentence(sentence):
         result = []
         for i, token in enumerate(sentence.tokens):
+            token_features = []
             window_start = max(0, i - self.window_left_size)
             window_end = min(len(sentence), i + self.window_right_size + 1)
             window_tokens = sentence.tokens[window_start:window_end]
@@ -219,7 +220,8 @@ class LDATopicFeature(object):
             topics = self.get_topics_of(text)
             for (topic_idx, prob) in topics:
                 if prob > self.prob_threshold:
-                    result.append("lda_%d=%s" % (topic_idx, "1"))
+                    token_features.append("lda_%d=%s" % (topic_idx, "1"))
+            result.append(token_features)
         return result
     
     def get_topics_of(text):
