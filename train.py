@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 import os
+import argparse
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
+ARTICLES_FILEPATH = "/media/aj/grab/nlp/corpus/processed/wikipedia-ner/annotated-fulltext.txt"
 BROWN_CLUSTERS_FILEPATH = "/media/aj/ssd2a/nlp/corpus/brown/wikipedia-de/brown_c1000_min12/paths"
 UNIGRAMS_FILEPATH = "/media/aj/ssd2a/nlp/corpus/processed/wikipedia-de/ngrams-1.txt"
 LDA_FILEPATH = os.path.join(CURRENT_DIR, "lda-model")
