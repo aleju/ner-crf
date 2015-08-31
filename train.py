@@ -4,8 +4,7 @@ import os
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 BROWN_CLUSTERS_FILEPATH = "/media/aj/ssd2a/nlp/corpus/brown/wikipedia-de/brown_c1000_min12/paths"
-UNIGRAMS_NAMES_FILEPATH = "" #todo
-UNIGRAMS_FILEPATH = "" #todo
+UNIGRAMS_FILEPATH = "/media/aj/ssd2a/nlp/corpus/processed/wikipedia-de/ngrams-1.txt"
 LDA_FILEPATH = os.path.join(CURRENT_DIR, "lda-model")
 LDA_DICTIONARY_FILEPATH = os.path.join(CURRENT_DIR, "lda-dictionary")
 LDA_CACHE_MAX_SIZE = 100000
@@ -18,6 +17,9 @@ UNIGRAMS_MAX_COUNT_WORDS = 1000
 W2V_CLUSTERS_FILEPATH = "/media/aj/ssd2a/nlp/corpus/word2vec/wikipedia-de/classes1000_cbow0_size300_neg0_win10_sample1em3_min50.txt"
 LDA_WINDOW_LEFT_SIZE = 5
 LDA_WINDOW_RIGHT_SIZE = 5
+CHUNK_SIZE = 50
+MAX_ITERATIONS = None
+COUNT_EXAMPLES = 100000
 
 def main():
     parser = argparse.ArgumentParser()
@@ -28,7 +30,7 @@ def main():
     
     print("Loading examples...")
     features = create_features()
-    examples = articles_to_xy(load_articles(ARTICLES_FILEPATH), 50, features, only_labeled_chunks=True)
+    examples = articles_to_xy(load_articles(ARTICLES_FILEPATH), CHUNK_SIZE, features, only_labeled_chunks=True)
     
     print("Appending up to %d examples...".format(COUNT_EXAMPLES))
     added = 0
@@ -46,11 +48,14 @@ def main():
     trainer.train(identifier)
 
 def create_features():
+    ug_all = Unigrams(UNIGRAMS_FILEPATH, skip_first_n=UNIGRAMS_SKIP_FIRST_N, max_count_words=UNIGRAMS_MAX_COUNT_WORDS)
+    ug_names = Unigrams()
+    ug_names.fill_names_from_file(ARTICLES_FILEPATH, ["PER"])
+    gaz = Gazetteer(ug_names, ug_all)
+    
     bc = BrownClusters(BROWN_CLUSTERS_FILEPATH)
-    gaz = Gazetteer(UNIGRAMS_NAMES_FILEPATH, UNIGRAMS_FILEPATH)
     lda = LdaWrapper(LDA_FILEPATH, LDA_DICTIONARY_FILEPATH, cache_max_size=LDA_CACHE_MAX_SIZE)
     pos = PosTagger(STANFORD_POS_JAR_FILEPATH, STANFORD_MODEL_FILEPATH, cache_dir=POS_TAGGER_CACHE_FILEPATH)
-    ug = Unigrams(UNIGRAMS_FILEPATH, skip_first_n=UNIGRAMS_SKIP_FIRST_N, max_count_words=UNIGRAMS_MAX_COUNT_WORDS)
     w2vc = W2VClusters(W2V_CLUSTERS_FILEPATH)
     
     result = [
