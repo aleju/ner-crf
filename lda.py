@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*
 from __future__ import absolute_import, division, print_function, unicode_literals
 import gensim
-from gensim.models.ldamodel import LdaModel
+#from gensim.models.ldamodel import LdaModel
 from gensim.models.ldamulticore import LdaMulticore
 from model.datasets import load_articles, load_windows
 import sys
 import argparse
 
-EXAMPLES_FILE_PATH = "/media/ssd2/nlp/corpus/processed/wikipedia-de/all.txt"
+#ARTICLES_FILEPATH = "/media/ssd2/nlp/corpus/processed/wikipedia-de/all.txt"
+ARTICLES_FILEPATH = "/media/aj/grab/nlp/corpus/processed/wikipedia-ner/annotated-fulltext.txt"
 PER_EXAMPLE_WINDOW_SIZE = 11
 LDA_CHUNK_SIZE = 10000 #2000 * 100  # docs pro batch in LDA, default ist 2000
 COUNT_EXAMPLES_FOR_DICTIONARY = 100000
@@ -29,17 +30,24 @@ def main():
         generate_dictionary()
     if args.train:
         train_lda()
+    if not args.dict and not args.train:
+        print("No option chosen.")
+        print("Add --dict to generate the dictionary or --train to train the LDA model.")
 
 def generate_dictionary():
-    print("Generating dictionary...")
+    print("------------------")
+    print("Generating LDA Dictionary")
+    print("------------------")
+    
     articles = load_articles(ARTICLES_FILEPATH)
     articles_str = []
     dictionary = gensim.corpora.Dictionary()
+    update_every_n_articles = 1000
 
     for i, article in enumerate(articles):
-        articles_str.append(article.get_content_as_string().lower())
-        if len(articles_str) > 50000:
-            print("Adding %d articles..." % (len(articles_str),))
+        articles_str.append(article.get_content_as_string().lower().split(" "))
+        if len(articles_str) >= update_every_n_articles:
+            print("Updating (at %d of max %d)..." % (i, COUNT_EXAMPLES_FOR_DICTIONARY))
             dictionary.add_documents(articles_str)
             articles_str = []
         
@@ -62,6 +70,10 @@ def generate_dictionary():
     dictionary.save(LDA_DICTIONARY_FILENAME)
 
 def train_lda():
+    print("------------------")
+    print("Training LDA model")
+    print("------------------")
+    
     print("Loading dictionary...")
     dictionary = gensim.corpora.dictionary.Dictionary.load(LDA_DICTIONARY_FILENAME)
 

@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
+import re
+from unidecode import unidecode
+
+NO_NE_LABEL = "O"
 
 def split_to_chunks(of, chunk_size):
     assert of is not None
@@ -19,28 +23,40 @@ def load_articles(filepath, start_at=0):
                 else:
                     yield Article(article)
 
-def load_windows(articles, window_size, features=None, every_nth=1, only_labeled_chunks=False):
-    processedArticlesSoFar = 0
-    nth = 0
-
+def load_windows(articles, window_size, features=None, every_nth_window=1, only_labeled_chunks=False):
+    processed_windows = 0
     for article in articles:
-        counts = article.get_label_counts()
-        counts_sum = sum([count[1] for count in counts])
+        count = article.count_labels()
+        #counts = article.get_label_counts()
+        #counts_sum = sum([count[1] for count in counts])
         
-        if counts_sum / len(article.tokens) >= 0.10:
+        if count / len(article.tokens) >= 0.10:
             pass
-        elif only_labeled_chunks and counts_sum == 0:
+        elif only_labeled_chunks and count == 0:
             pass
         else:
-            token_chunks = split_to_chunks(tokens, chunk_size)
-            for token_chunk in token_chunks:
-                counts_chunk = count_tags(" ".join(token_chunk))
-                if not prefer_labeled_chunks or counts_chunk.sum > 0:
-                    window = Window([Token(token) for token in token_chunk])
-                    if features is not None:
-                        window.apply_features(features)
-                    yield window
-                nth += 1
+            token_windows = split_to_chunks(article.tokens, chunk_size)
+            for token_window in token_windows:
+                window = Window([Token(token) for token in token_window])
+                if not only_labeled_windows or window.count_labels() > 0:
+                    if loaded_windows % every_nth_window == 0:
+                        if features is not None:
+                            window.apply_features(features)
+                        yield window
+                    processed_windows += 1
+
+def cleanup_unicode(in_str):
+    result = in_str
+
+    mappings = [(u"ü", "ue"), (u"ö", "oe"), (u"ä", "ae"),
+                (u"Ü", "Ue"), (u"Ö", "Oe"), (u"Ä", "Ae"),
+                (u"ß", "ss")]
+    for str_from, str_to in mappings:
+        result = result.replace(str_from, str_to)
+
+    result = unidecode(result)
+
+    return result
 
 """
 def tokens_to_xy(tokens, window_left, window_right, active_features=None):
@@ -81,35 +97,24 @@ class Article(object):
         tokens_str = [token_str.strip() for token_str in text.strip().split(" ")]
         self.tokens = [Token(token_str) for token_str in tokens_str if len(token_str) > 0]
     
-    def get_content_as_string():
+    def get_content_as_string(self):
         return " ".join([token.word for token in self.tokens])
     
-    def get_label_counts(add_no_ne_label=False):
+    def get_label_counts(self, add_no_ne_label=False):
         counts = defaultdict(0)
         for token in tokens:
             if token.label != NO_NE_LABEL or add_no_ne_label:
                 counts[token.label] += 1
         return counts.iteritems()
+    
+    def count_labels(self, add_no_ne_label=False):
+        return sum([count[1] for count in self.get_label_counts(add_no_ne_label=add_no_ne_label)])
 
-class Token(object):
-    def __init__(self, original):
-        self.original = original
-        pos = token.rfind("/")
-        end = token[pos+1:]
-        if pos > -1 and end in ["PER", "LOC", "ORG", "MISC"]:
-            self.word = original[0:pos]
-            self.label = end
-        else:
-            self.word = original
-            self.label = NO_NE_LABEL
-        self.word_ascii = cleanupUnicode(self.word)
-        self.features_values = None
-
-class Window(object):
+class Window(Article):
     def __init__(self, tokens):
         self.tokens = tokens
 
-    def apply_features(features):
+    def apply_features(self, features):
         # returns a multi-dimensional list
         # 1st dimension: Feature (class)
         # 2nd dimension: token
@@ -126,6 +131,26 @@ class Window(object):
             
             for token_idx in range(len(self.tokens)):
                 self.tokens[token_idx].features_values.extend(feature_values[token_idx])
+
+class Token(object):
+    def __init__(self, original):
+        self.original = original
+        self.word = original
+        self.label = NO_NE_LABEL
+        if "/" in original:
+            pos = original.rfind("/")
+            end = original[pos+1:]
+            if end in ["PER", "LOC", "ORG", "MISC"]:
+                self.word = original[0:pos]
+                self.label = end
+        self._word_ascii = None
+        self.features_values = None
+    
+    @property
+    def word_ascii(self):
+        if self._word_ascii is None:
+            self._word_ascii = cleanup_unicode(self.word)
+        return self._word_ascii
 
 """
 def count_tags(article_str):
