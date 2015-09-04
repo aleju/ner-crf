@@ -94,11 +94,6 @@ def train_lda():
     for word in dictionary.token2id:    
         id2word[dictionary.token2id[word]] = word
 
-    #corpus = [dictionary.doc2bow(text) for text in texts]
-
-    #gensim.corpora.MmCorpus.serialize('wikipedia_lda_corpus.mm', corpus)
-    #mm = gensim.corpora.MmCorpus('wikipedia_lda_corpus.mm')
-
     print("Training...")
     lda_model = LdaMulticore(corpus=None, num_topics=LDA_COUNT_TOPICS, id2word=id2word, workers=LDA_COUNT_WORKERS, chunksize=LDA_CHUNK_SIZE)
 
@@ -140,7 +135,6 @@ def test_lda(sentence):
         raise Exception("Missing or empty 'sentence' argument.")
     
     sentence = sentence.decode("utf-8").lower().strip().split(" ")
-    #print(sentence)
     if len(sentence) != PER_EXAMPLE_WINDOW_SIZE:
         print("[INFO] the token size of your sentence does not match the defined window size (%d vs %d)." % (len(sentence), PER_EXAMPLE_WINDOW_SIZE))
     
