@@ -2,6 +2,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import re
 from unidecode import unidecode
+from collections import Counter
 
 NO_NE_LABEL = "O"
 
@@ -23,7 +24,7 @@ def load_articles(filepath, start_at=0):
                 else:
                     yield Article(article)
 
-def load_windows(articles, window_size, features=None, every_nth_window=1, only_labeled_chunks=False):
+def load_windows(articles, window_size, features=None, every_nth_window=1, only_labeled_windows=False):
     processed_windows = 0
     for article in articles:
         count = article.count_labels()
@@ -32,14 +33,14 @@ def load_windows(articles, window_size, features=None, every_nth_window=1, only_
         
         if count / len(article.tokens) >= 0.10:
             pass
-        elif only_labeled_chunks and count == 0:
+        elif only_labeled_windows and count == 0:
             pass
         else:
-            token_windows = split_to_chunks(article.tokens, chunk_size)
+            token_windows = split_to_chunks(article.tokens, window_size)
             for token_window in token_windows:
-                window = Window([Token(token) for token in token_window])
+                window = Window([token for token in token_window])
                 if not only_labeled_windows or window.count_labels() > 0:
-                    if loaded_windows % every_nth_window == 0:
+                    if processed_windows % every_nth_window == 0:
                         if features is not None:
                             window.apply_features(features)
                         yield window
@@ -101,11 +102,17 @@ class Article(object):
         return " ".join([token.word for token in self.tokens])
     
     def get_label_counts(self, add_no_ne_label=False):
+        """
         counts = defaultdict(0)
         for token in tokens:
             if token.label != NO_NE_LABEL or add_no_ne_label:
                 counts[token.label] += 1
-        return counts.iteritems()
+        """
+        if add_no_ne_label:
+            counts = Counter([token.label for token in self.tokens])
+        else:
+            counts = Counter([token.label for token in self.tokens if token.label != NO_NE_LABEL])
+        return counts.most_common()
     
     def count_labels(self, add_no_ne_label=False):
         return sum([count[1] for count in self.get_label_counts(add_no_ne_label=add_no_ne_label)])

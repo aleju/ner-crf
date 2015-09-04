@@ -12,6 +12,8 @@ ARTICLES_FILEPATH = "/media/aj/grab/nlp/corpus/processed/wikipedia-ner/annotated
 PER_EXAMPLE_WINDOW_SIZE = 11
 LDA_CHUNK_SIZE = 10000 #2000 * 100  # docs pro batch in LDA, default ist 2000
 COUNT_EXAMPLES_FOR_DICTIONARY = 100000
+#COUNT_EXAMPLES_FOR_LDA = 1000 * 1000 * 10 # in windows
+COUNT_EXAMPLES_FOR_LDA = 1000 * 1000 # in windows
 LDA_COUNT_TOPICS = 100
 LDA_COUNT_WORKERS = 3
 LDA_MODEL_FILENAME = "lda_model"
@@ -47,7 +49,7 @@ def generate_dictionary():
     for i, article in enumerate(articles):
         articles_str.append(article.get_content_as_string().lower().split(" "))
         if len(articles_str) >= update_every_n_articles:
-            print("Updating (at %d of max %d)..." % (i, COUNT_EXAMPLES_FOR_DICTIONARY))
+            print("Updating (at article %d of max %d)..." % (i, COUNT_EXAMPLES_FOR_DICTIONARY))
             dictionary.add_documents(articles_str)
             articles_str = []
         
@@ -56,6 +58,7 @@ def generate_dictionary():
             break
 
     if len(articles_str) > 0:
+        print("Updating with remaining articles...")
         dictionary.add_documents(articles_str)
 
     print("Loaded %d unique words." % (len(dictionary.keys()),))
@@ -91,20 +94,23 @@ def train_lda():
     lda_model = LdaMulticore(corpus=None, num_topics=LDA_COUNT_TOPICS, id2word=id2word, workers=LDA_COUNT_WORKERS, chunksize=LDA_CHUNK_SIZE)
 
     examples = []
-    update_every_n_windows = 250000
-    windows = load_windows(load_articles(ARTICLES_FILEPATH), PER_EXAMPLE_WINDOW_SIZE)
-    for window in windows:
+    update_every_n_windows = 100000
+    windows = load_windows(load_articles(ARTICLES_FILEPATH), PER_EXAMPLE_WINDOW_SIZE, only_labeled_windows=True)
+    for i, window in enumerate(windows):
         tokens_str = [token.word.lower() for token in window.tokens]
         bow = dictionary.doc2bow(tokens_str)
         examples.append(bow)
         if len(examples) >= update_every_n_windows:
-            print("Updating...")
+            print("Updating (at window %d of max %d)..." % (i, COUNT_EXAMPLES_FOR_LDA))
             lda_model.update(examples)
             examples = []
+        if i >= COUNT_EXAMPLES_FOR_LDA:
+            print("Reached max of %d windows." % (COUNT_EXAMPLES_FOR_LDA,))
+            break
 
     if len(examples) > 0:
+        print("Updating with remaining windows...")
         lda_model.update(examples)
-
 
     print("Saving...")
     lda_model.save(LDA_MODEL_FILENAME)
