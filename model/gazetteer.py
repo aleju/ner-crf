@@ -3,11 +3,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 class Gazetteer():
     def __init__(self, unigrams_names, unigrams):
-        self.gazetteer = dict()
+        self.gazetteer = set()
         self.fill_by_comparison(unigrams_names, unigrams)
     
     def clear(self):
-        self.gazetteer = dict()
+        self.gazetteer = set()
     
     def fill_by_comparison(self, unigrams_names, unigrams):
         sum_names_counts = unigrams_names.sum_of_counts
@@ -20,5 +20,5 @@ class Gazetteer():
             if freq_all is None or freq_names > freq_all:
                 self.gazetteer.add(name)
     
-    def is_in_gazetteer(self, word):
+    def contains(self, word):
         return (word in self.gazetteer)

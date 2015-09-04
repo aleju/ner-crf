@@ -2,13 +2,23 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import os
 import argparse
+import pycrfsuite
+
+from model.brown import BrownClusters
+from model.gazetteer import Gazetteer
+from model.lda import LdaWrapper
+from model.pos import PosTagger
+from model.unigrams import Unigrams
+from model.w2v import W2VClusters
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 ARTICLES_FILEPATH = "/media/aj/grab/nlp/corpus/processed/wikipedia-ner/annotated-fulltext.txt"
 BROWN_CLUSTERS_FILEPATH = "/media/aj/ssd2a/nlp/corpus/brown/wikipedia-de/brown_c1000_min12/paths"
-UNIGRAMS_FILEPATH = "/media/aj/ssd2a/nlp/corpus/processed/wikipedia-de/ngrams-1.txt"
-LDA_FILEPATH = os.path.join(CURRENT_DIR, "lda-model")
-LDA_DICTIONARY_FILEPATH = os.path.join(CURRENT_DIR, "lda-dictionary")
+#UNIGRAMS_FILEPATH = "/media/aj/ssd2a/nlp/corpus/processed/wikipedia-de/ngrams-1.txt"
+UNIGRAMS_FILEPATH = os.path.join(CURRENT_DIR, "preprocessing/unigrams.txt")
+UNIGRAMS_PERSON_FILEPATH = os.path.join(CURRENT_DIR, "preprocessing/unigrams_per.txt")
+LDA_FILEPATH = os.path.join(CURRENT_DIR, "preprocessing/lda-model")
+LDA_DICTIONARY_FILEPATH = os.path.join(CURRENT_DIR, "preprocessing/lda-dictionary")
 LDA_CACHE_MAX_SIZE = 100000
 STANFORD_DIR = "/media/ssd2/nlp/nlpjava/stanford-postagger-full-2013-06-20/stanford-postagger-full-2013-06-20/"
 STANFORD_POS_JAR_FILEPATH = os.path.join(STANFORD_DIR, "stanford-postagger-3.2.0.jar")
@@ -19,7 +29,7 @@ UNIGRAMS_MAX_COUNT_WORDS = 1000
 W2V_CLUSTERS_FILEPATH = "/media/aj/ssd2a/nlp/corpus/word2vec/wikipedia-de/classes1000_cbow0_size300_neg0_win10_sample1em3_min50.txt"
 LDA_WINDOW_LEFT_SIZE = 5
 LDA_WINDOW_RIGHT_SIZE = 5
-CHUNK_SIZE = 50
+WINDOW_SIZE = 50
 MAX_ITERATIONS = None
 COUNT_EXAMPLES = 100000
 
@@ -30,35 +40,47 @@ def main():
     
     trainer = pycrfsuite.Trainer(verbose=True)
     
-    print("Loading examples...")
+    print("Creating features...")
     features = create_features()
-    examples = articles_to_xy(load_articles(ARTICLES_FILEPATH), CHUNK_SIZE, features, only_labeled_chunks=True)
+    
+    print("Loading windows...")
+    windows = load_windows(load_articles(ARTICLES_FILEPATH), WINDOW_SIZE, features, only_labeled_windows=True)
     
     print("Appending up to %d examples...".format(COUNT_EXAMPLES))
     added = 0
-    for (features, labels, tokens) in examples:
-        if added > 0 and added % 500 == 0:
-            print("Appended %d examples...".format(added))
-        trainer.append(features, labels)
-        added += 1
-        if added == COUNT_EXAMPLES:
-            break
+    for window in windows:
+        labels = window.get_labels()
+        for word_idx in range(len(window.tokens)):
+            features = window.get_feature_values_list()
+            trainer.append(features, labels)
+            added += 1
+            if added % 500 == 0:
+                print("Added %d of max %d windows" % (added+1, COUNT_EXAMPLES))
+            if added == COUNT_EXAMPLES:
+                break
     
     print("Training...")
     if MAX_ITERATIONS is not None and MAX_ITERATIONS > 0:
         trainer.set_params({'max_iterations': MAX_ITERATIONS})
     trainer.train(identifier)
 
-def create_features():
+def create_features(verbose=True):
+    print("Collecting unigrams...")
     ug_all = Unigrams(UNIGRAMS_FILEPATH, skip_first_n=UNIGRAMS_SKIP_FIRST_N, max_count_words=UNIGRAMS_MAX_COUNT_WORDS)
-    ug_names = Unigrams()
-    ug_names.fill_names_from_file(ARTICLES_FILEPATH, ["PER"])
+    print("Collecting names...")
+    ug_names = Unigrams(UNIGRAMS_PERSON_FILEPATH)
+    #ug_names.fill_names_from_file(ARTICLES_FILEPATH, ["PER"])
+    print("Creating gazetteer...")
     gaz = Gazetteer(ug_names, ug_all)
     
+    print("Loading brown clusters...")
     bc = BrownClusters(BROWN_CLUSTERS_FILEPATH)
-    lda = LdaWrapper(LDA_FILEPATH, LDA_DICTIONARY_FILEPATH, cache_max_size=LDA_CACHE_MAX_SIZE)
-    pos = PosTagger(STANFORD_POS_JAR_FILEPATH, STANFORD_MODEL_FILEPATH, cache_dir=POS_TAGGER_CACHE_FILEPATH)
+    print("Loading W2V clusters...")
     w2vc = W2VClusters(W2V_CLUSTERS_FILEPATH)
+    print("Loading LDA...")
+    lda = LdaWrapper(LDA_FILEPATH, LDA_DICTIONARY_FILEPATH, cache_max_size=LDA_CACHE_MAX_SIZE)
+    print("Loading POS-Tagger...")
+    pos = PosTagger(STANFORD_POS_JAR_FILEPATH, STANFORD_MODEL_FILEPATH, cache_dir=POS_TAGGER_CACHE_FILEPATH)
     
     result = [
         StartsWithUppercaseFeature(),
