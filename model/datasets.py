@@ -122,7 +122,7 @@ class Window(Article):
         self.tokens = tokens
 
     def apply_features(self, features):
-        # returns a multi-dimensional list
+        # feature_values is a multi-dimensional list
         # 1st dimension: Feature (class)
         # 2nd dimension: token
         # 3rd dimension: values (for this token and feature, usually just one value, sometimes more,
@@ -137,7 +137,25 @@ class Window(Article):
             assert len(feature_values) == len(self.tokens)
             
             for token_idx in range(len(self.tokens)):
-                self.tokens[token_idx].features_values.extend(feature_values[token_idx])
+                self.tokens[token_idx].feature_values.extend(feature_values[token_idx])
+        # self.token.feature_values now is a simple list
+        # of feature values, eg ["w2v=875", "bc=48", ...]
+    
+    def get_feature_values_list(self, word_index):
+        assert word_index >= 0
+        assert word_index < len(self.tokens)
+
+        all_feature_values = []
+
+        for i, token in enumerate(self.tokens):
+            diff = i - word_index
+            feature_values = ["%d:%s" % (diff, feature_value) for feature_value in token.feature_values]
+            all_feature_values.extend(feature_values)
+
+        return all_feature_values
+
+    def get_labels(self):
+        return [token.label for token in self.tokens]
 
 class Token(object):
     def __init__(self, original):
@@ -151,7 +169,7 @@ class Token(object):
                 self.word = original[0:pos]
                 self.label = end
         self._word_ascii = None
-        self.features_values = None
+        self.feature_values = None
     
     @property
     def word_ascii(self):

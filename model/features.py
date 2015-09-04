@@ -5,7 +5,7 @@ class StartsWithUppercaseFeature(object):
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            result.append(["swu=%d" % (int(word[token].istitle()))])
+            result.append(["swu=%d" % (int(token.word[:1].istitle()))])
         return result
 
 class TokenLengthFeature(object):
@@ -15,7 +15,7 @@ class TokenLengthFeature(object):
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            result.append(["l=%d" % (min(len(word), self.max_length))])
+            result.append(["l=%d" % (min(len(token.word), self.max_length))])
         return result
 
 class ContainsDigitsFeature(object):    
@@ -25,7 +25,7 @@ class ContainsDigitsFeature(object):
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            result.append(["cD=%d" % (int(self.regexpContainsDigits.search(word) is not None))])
+            result.append(["cD=%d" % (int(self.regexpContainsDigits.search(token.word) is not None))])
         return result
     
 class ContainsPunctuationFeature(object):
@@ -35,7 +35,7 @@ class ContainsPunctuationFeature(object):
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            result.append(["cP=%d" % (int(self.regexpContainsPunctuation.search(word) is not None))])
+            result.append(["cP=%d" % (int(self.regexpContainsPunctuation.search(token.word) is not None))])
         return result
 
 class OnlyDigitsFeature(object):
@@ -45,7 +45,7 @@ class OnlyDigitsFeature(object):
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            result.append(["oD=%d" % (int(self.regexpContainsOnlyDigits.search(word) is not None))])
+            result.append(["oD=%d" % (int(self.regexpContainsOnlyDigits.search(token.word) is not None))])
         return result
 
 class OnlyPunctuationFeature(object):
@@ -55,7 +55,7 @@ class OnlyPunctuationFeature(object):
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            result.append(["oP=%d" % (int(self.regexpContainsOnlyPunctuation.search(word) is not None))])
+            result.append(["oP=%d" % (int(self.regexpContainsOnlyPunctuation.search(token.word) is not None))])
         return result
 
 class W2VClusterFeature(object):
@@ -69,7 +69,7 @@ class W2VClusterFeature(object):
         return result
     
     def token_to_cluster(token):
-        return self.w2v_clusters.get_cluster_of(token, -1)
+        return self.w2v_clusters.get_cluster_of(token.word, -1)
 
 class BrownClusterFeature(object):
     def __init__(self, brown_clusters):
@@ -82,7 +82,7 @@ class BrownClusterFeature(object):
         return result
     
     def token_to_cluster(token):
-        return self.brown_clusters.get_cluster_of(token, -1)
+        return self.brown_clusters.get_cluster_of(token.word, -1)
 
 class BrownClusterBitsFeature(object):
     def __init__(self, brown_clusters):
@@ -95,7 +95,7 @@ class BrownClusterBitsFeature(object):
         return result
     
     def token_to_bitchain(token):
-        return self.brown_clusters.get_bitchain_of(token, "")
+        return self.brown_clusters.get_bitchain_of(token.word, "")
 
 class GazetteerFeature(object):
     def __init__(self, gazetteer):
@@ -108,7 +108,7 @@ class GazetteerFeature(object):
         return result
     
     def is_in_gazetteer(token):
-        return self.gazetteer.is_in_gazetteer(token)
+        return self.gazetteer.contains(token.word)
 
 class WordPatternFeature(object):
     def __init__(self):
@@ -140,7 +140,7 @@ class WordPatternFeature(object):
         return result
     
     def token_to_wordpattern(token):
-        normalized = token
+        normalized = token.word
         for from_regex, to_str in self.normalization:
             normalized = re.sub(from_regex, to_str, normalized)
         
@@ -149,9 +149,9 @@ class WordPatternFeature(object):
             wp = re.sub(from_regex, to_str, wp)
         
         if len(wp) > self.max_length:
-            wordPattern = wp[0:max_length] + self.max_length_char
+            wp = wp[0:max_length] + self.max_length_char
         
-        return wordPattern
+        return wp
 
 class UnigramRankFeature(object):
     def __init__(self, unigrams):
@@ -164,7 +164,7 @@ class UnigramRankFeature(object):
         return result
     
     def token_to_rank(token):
-        return self.unigrams.get_rank_of(token, -1)
+        return self.unigrams.get_rank_of(token.word, -1)
 
 class PrefixFeature(object):
     def __init__(self):
@@ -173,7 +173,7 @@ class PrefixFeature(object):
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            prefix = re.sub(r'[^a-zA-ZäöüÄÖÜß\.\,\!\?]', '#', word[0:3])
+            prefix = re.sub(r'[^a-zA-ZäöüÄÖÜß\.\,\!\?]', '#', token.word[0:3])
             result.append(["pf=%s" % (prefix)])
         return result
 
@@ -184,7 +184,7 @@ class SuffixFeature(object):
     def convert_sentence(sentence):
         result = []
         for token in sentence.tokens:
-            suffix = re.sub(r'[^a-zA-ZäöüÄÖÜß\.\,\!\?]', '#', word[-3:])
+            suffix = re.sub(r'[^a-zA-ZäöüÄÖÜß\.\,\!\?]', '#', token.word[-3:])
             result.append(["sf=%s" % (prefix)])
         return result
 
@@ -200,7 +200,7 @@ class POSTagFeature(object):
         return result
     
     def stanford_pos_tag(sentence):
-        return self.tag(sentence)
+        return self.pos_tagger.tag([token.word for token in sentence.tokens])
 
 class LDATopicFeature(object):
     def __init__(self, lda_wrapper, window_left_size, window_right_size, prob_threshold=0.5):
@@ -216,7 +216,7 @@ class LDATopicFeature(object):
             window_start = max(0, i - self.window_left_size)
             window_end = min(len(sentence), i + self.window_right_size + 1)
             window_tokens = sentence.tokens[window_start:window_end]
-            text = " ".join(window_tokens)
+            text = " ".join([token.word for token in window_tokens])
             topics = self.get_topics_of(text)
             for (topic_idx, prob) in topics:
                 if prob > self.prob_threshold:
