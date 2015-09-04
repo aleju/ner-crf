@@ -19,11 +19,11 @@ def load_articles(filepath, start_at=0):
                 else:
                     yield Article(article)
 
-def articles_to_xy(articles_gen, chunk_size, features, every_nth=1, only_labeled_chunks=False):
+def load_windows(articles, window_size, features=None, every_nth=1, only_labeled_chunks=False):
     processedArticlesSoFar = 0
     nth = 0
 
-    for article in articles_gen:
+    for article in articles:
         counts = article.get_label_counts()
         counts_sum = sum([count[1] for count in counts])
         
@@ -36,9 +36,10 @@ def articles_to_xy(articles_gen, chunk_size, features, every_nth=1, only_labeled
             for token_chunk in token_chunks:
                 counts_chunk = count_tags(" ".join(token_chunk))
                 if not prefer_labeled_chunks or counts_chunk.sum > 0:
-                    sentence = Sentence([Token(token) for token in token_chunk])
-                    sentence.apply_features(features)
-                    yield sentence
+                    window = Window([Token(token) for token in token_chunk])
+                    if features is not None:
+                        window.apply_features(features)
+                    yield window
                 nth += 1
 
 """
@@ -76,8 +77,12 @@ def tokens_to_xy(tokens, window_left, window_right, active_features=None):
 
 class Article(object):
     def __init__(self, text):
-        text = re.sub(r"[ ]+", " ", text)
-        self.tokens = [Token(token_str) for token_str in text.split(" ")]
+        text = re.sub(r"[\t ]+", " ", text)
+        tokens_str = [token_str.strip() for token_str in text.strip().split(" ")]
+        self.tokens = [Token(token_str) for token_str in tokens_str if len(token_str) > 0]
+    
+    def get_content_as_string():
+        return " ".join([token.word for token in self.tokens])
     
     def get_label_counts(add_no_ne_label=False):
         counts = defaultdict(0)
@@ -100,7 +105,7 @@ class Token(object):
         self.word_ascii = cleanupUnicode(self.word)
         self.features_values = None
 
-class Sentence(object):
+class Window(object):
     def __init__(self, tokens):
         self.tokens = tokens
 

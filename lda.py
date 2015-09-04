@@ -3,11 +3,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import gensim
 from gensim.models.ldamodel import LdaModel
 from gensim.models.ldamulticore import LdaMulticore
+from model.datasets import load_articles, load_windows
 import sys
 import argparse
 
 EXAMPLES_FILE_PATH = "/media/ssd2/nlp/corpus/processed/wikipedia-de/all.txt"
-PER_EXAMPLE_CHUNK_SIZE = 30 #11
+PER_EXAMPLE_WINDOW_SIZE = 11
 LDA_CHUNK_SIZE = 10000 #2000 * 100  # docs pro batch in LDA, default ist 2000
 COUNT_EXAMPLES_FOR_DICTIONARY = 100000
 LDA_COUNT_TOPICS = 100
@@ -36,7 +37,7 @@ def generate_dictionary():
     dictionary = gensim.corpora.Dictionary()
 
     for i, article in enumerate(articles):
-        articles_str.append(article.get_content_as_string())
+        articles_str.append(article.get_content_as_string().lower())
         if len(articles_str) > 50000:
             print("Adding %d articles..." % (len(articles_str),))
             dictionary.add_documents(articles_str)
@@ -60,59 +61,62 @@ def generate_dictionary():
     print("Saving dictionary...")
     dictionary.save(LDA_DICTIONARY_FILENAME)
 
-#todo
-def generateLda():
-	print "Loading dictionary..."
-	dictionary = gensim.corpora.dictionary.Dictionary.load(LDA_DICTIONARY_FILENAME)
-	
-	print "Generating id2word..."
-	id2word = {}
-	for word in dictionary.token2id:    
-		id2word[dictionary.token2id[word]] = word
-	
-	#corpus = [dictionary.doc2bow(text) for text in texts]
-	
-	#gensim.corpora.MmCorpus.serialize('wikipedia_lda_corpus.mm', corpus)
-	#mm = gensim.corpora.MmCorpus('wikipedia_lda_corpus.mm')
-	
-	print "Training..."
-	myc = MyCorpus(dictionary)
-	wpLda = LdaMulticore(corpus=None, num_topics=LDA_COUNT_TOPICS, id2word=id2word, workers=LDA_COUNT_WORKERS, chunksize=LDA_CHUNK_SIZE)
-	#wpLda = LdaModel(corpus=myc, num_topics=COUNT_TOPICS, id2word=id2word, chunksize=LDA_CHUNK_SIZE)
-	
-	updateEvery = 250000
-	examples = []
-	for example in myc:
-		examples.append(example)
-		if len(examples) >= updateEvery:
-			print "Updating..."
-			wpLda.update(examples)
-			examples = []
-	
-	if len(examples) > 0 and len(examples) < updateEvery:
-		wpLda.update(examples)
-	
-	
-	print "Saving..."
-	wpLda.save(LDA_MODEL_FILENAME)
-	
-	print "Showing Topics..."
-	topics = wpLda.show_topics(num_topics=LDA_COUNT_TOPICS, num_words=10, log=False, formatted=True)
-	
-	print "Showing Examples..."
-	for (i, topic) in enumerate(topics):
-		print str(i) + ": " + topic
-	print wpLda[dictionary.doc2bow(u'der Schriftsteller'.lower().split(" "))]
-	print wpLda[dictionary.doc2bow(u'der portugiesische Staats­präsident Jorge Sampaio wie am'.lower().split(" "))]
-	print wpLda[dictionary.doc2bow(u'Harold Johnson ( 86 ), US-amerikanischer Boxer ( † 19 . Februar )'.lower().split(" "))]
-	print wpLda[dictionary.doc2bow(u'Der kirgisische Fünftausender Pik Alexander von Humboldt wurde 2003'.lower().split(" "))]
-	print wpLda[dictionary.doc2bow(u'Textil­unternehmer und Sozial­reformer Bernhard Greuter kommt zur Welt'.lower().split(" "))]
-	print wpLda[dictionary.doc2bow(u'In Wien stirbt Joseph II . , seit 1765 Kaiser'.lower().split(" "))]
-	print "---"
-	print wpLda[dictionary.doc2bow(u'Die NASA-Mond­sonde Ranger 8 funkt , wie'.lower().split(" "))]
-	print wpLda[dictionary.doc2bow(u'vermutlich terroristisch motivierten Anschlägen in Kopenhagen wurden'.lower().split(" "))]
-	print wpLda[dictionary.doc2bow(u'Gemäß dem 2. Minsker Abkommen ist eine'.lower().split(" "))]
+def train_lda():
+    print("Loading dictionary...")
+    dictionary = gensim.corpora.dictionary.Dictionary.load(LDA_DICTIONARY_FILENAME)
 
+    print("Generating id2word...")
+    id2word = {}
+    for word in dictionary.token2id:    
+        id2word[dictionary.token2id[word]] = word
+
+    #corpus = [dictionary.doc2bow(text) for text in texts]
+
+    #gensim.corpora.MmCorpus.serialize('wikipedia_lda_corpus.mm', corpus)
+    #mm = gensim.corpora.MmCorpus('wikipedia_lda_corpus.mm')
+
+    print("Training...")
+    lda_model = LdaMulticore(corpus=None, num_topics=LDA_COUNT_TOPICS, id2word=id2word, workers=LDA_COUNT_WORKERS, chunksize=LDA_CHUNK_SIZE)
+
+    examples = []
+    update_every_n_windows = 250000
+    windows = load_windows(load_articles(ARTICLES_FILEPATH), PER_EXAMPLE_WINDOW_SIZE)
+    for window in windows:
+        tokens_str = [token.word.lower() for token in window.tokens]
+        bow = dictionary.doc2bow(tokens_str)
+        examples.append(bow)
+        if len(examples) >= update_every_n_windows:
+            print("Updating...")
+            lda_model.update(examples)
+            examples = []
+
+    if len(examples) > 0:
+        lda_model.update(examples)
+
+
+    print("Saving...")
+    lda_model.save(LDA_MODEL_FILENAME)
+
+    """
+    print "Showing Topics..."
+    topics = wpLda.show_topics(num_topics=LDA_COUNT_TOPICS, num_words=10, log=False, formatted=True)
+
+    print "Showing Examples..."
+    for (i, topic) in enumerate(topics):
+        print str(i) + ": " + topic
+    print wpLda[dictionary.doc2bow(u'der Schriftsteller'.lower().split(" "))]
+    print wpLda[dictionary.doc2bow(u'der portugiesische Staats­präsident Jorge Sampaio wie am'.lower().split(" "))]
+    print wpLda[dictionary.doc2bow(u'Harold Johnson ( 86 ), US-amerikanischer Boxer ( † 19 . Februar )'.lower().split(" "))]
+    print wpLda[dictionary.doc2bow(u'Der kirgisische Fünftausender Pik Alexander von Humboldt wurde 2003'.lower().split(" "))]
+    print wpLda[dictionary.doc2bow(u'Textil­unternehmer und Sozial­reformer Bernhard Greuter kommt zur Welt'.lower().split(" "))]
+    print wpLda[dictionary.doc2bow(u'In Wien stirbt Joseph II . , seit 1765 Kaiser'.lower().split(" "))]
+    print "---"
+    print wpLda[dictionary.doc2bow(u'Die NASA-Mond­sonde Ranger 8 funkt , wie'.lower().split(" "))]
+    print wpLda[dictionary.doc2bow(u'vermutlich terroristisch motivierten Anschlägen in Kopenhagen wurden'.lower().split(" "))]
+    print wpLda[dictionary.doc2bow(u'Gemäß dem 2. Minsker Abkommen ist eine'.lower().split(" "))]
+    """
+
+"""
 def examplesGen(startAtArticle=0, examplesFilePath=EXAMPLES_FILE_PATH):
 	skippedArticlesSoFar = 0
 	processedArticlesSoFar = 0
@@ -161,8 +165,9 @@ class MyCorpus(object):
 							yield self.dictionary.doc2bow(tokenChunk)
 						# assume there's one document per line, tokens separated by whitespace
 						#yield self.dictionary.doc2bow(article.lower().split())
+"""
 
 # --------------------
 
-
-main()
+if __name__ == "__main__":
+    main()
