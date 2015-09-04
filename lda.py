@@ -9,16 +9,15 @@ import argparse
 
 #ARTICLES_FILEPATH = "/media/ssd2/nlp/corpus/processed/wikipedia-de/all.txt"
 ARTICLES_FILEPATH = "/media/aj/grab/nlp/corpus/processed/wikipedia-ner/annotated-fulltext.txt"
-PER_EXAMPLE_WINDOW_SIZE = 11
+PER_EXAMPLE_WINDOW_SIZE = 11 # window size per example: 5 words left, 1 center, 5 words right
 LDA_CHUNK_SIZE = 10000 #2000 * 100  # docs pro batch in LDA, default ist 2000
-COUNT_EXAMPLES_FOR_DICTIONARY = 100000
-#COUNT_EXAMPLES_FOR_LDA = 1000 * 1000 * 10 # in windows
-COUNT_EXAMPLES_FOR_LDA = 1000 * 1000 # in windows
+COUNT_EXAMPLES_FOR_DICTIONARY = 100000 # 100k articles as data basis for the dictionary
+COUNT_EXAMPLES_FOR_LDA = 1000 * 1000 # 1 million windows as training set
 LDA_COUNT_TOPICS = 100
 LDA_COUNT_WORKERS = 3
 LDA_MODEL_FILENAME = "lda_model"
 LDA_DICTIONARY_FILENAME = "lda_dictionary"
-IGNORE_WORDS_BELOW_COUNT = 4
+IGNORE_WORDS_BELOW_COUNT = 4 # remove very rare words from the dictionary
 
 def main():
     parser = argparse.ArgumentParser()
@@ -26,15 +25,25 @@ def main():
                         help="Create the LDA's dictionary (must happen before training).")
     parser.add_argument("--train", required=False, action="store_const", const=True,
                         help="Train the LDA model.")
+    parser.add_argument("--topics", required=False, action="store_const", const=True,
+                        help="Show the topics of a trained LDA model.")
+    parser.add_argument("--test", required=False, action="store_const", const=True,
+                        help="Test the trained LDA on a sentence provided via --sentence.")
+    parser.add_argument("--sentence", required=False,
+                        help="An example sentence to test the LDA model on.")
     args = parser.parse_args()
 
     if args.dict:
         generate_dictionary()
     if args.train:
         train_lda()
-    if not args.dict and not args.train:
-        print("No option chosen.")
-        print("Add --dict to generate the dictionary or --train to train the LDA model.")
+    if args.topics:
+        show_topics()
+    if args.test:
+        test_lda(args.sentence)
+
+    if not args.dict and not args.train and not args.topics and not args.test:
+        print("No option chosen, choose --dict or --train or --topics or --test.")
 
 def generate_dictionary():
     print("------------------")
@@ -94,7 +103,7 @@ def train_lda():
     lda_model = LdaMulticore(corpus=None, num_topics=LDA_COUNT_TOPICS, id2word=id2word, workers=LDA_COUNT_WORKERS, chunksize=LDA_CHUNK_SIZE)
 
     examples = []
-    update_every_n_windows = 100000
+    update_every_n_windows = 25000
     windows = load_windows(load_articles(ARTICLES_FILEPATH), PER_EXAMPLE_WINDOW_SIZE, only_labeled_windows=True)
     for i, window in enumerate(windows):
         tokens_str = [token.word.lower() for token in window.tokens]
@@ -108,82 +117,38 @@ def train_lda():
             print("Reached max of %d windows." % (COUNT_EXAMPLES_FOR_LDA,))
             break
 
-    if len(examples) > 0:
-        print("Updating with remaining windows...")
-        lda_model.update(examples)
+    #if len(examples) > 0:
+    #    print("Updating with remaining windows...")
+    #    lda_model.update(examples)
 
     print("Saving...")
     lda_model.save(LDA_MODEL_FILENAME)
 
-    """
-    print "Showing Topics..."
-    topics = wpLda.show_topics(num_topics=LDA_COUNT_TOPICS, num_words=10, log=False, formatted=True)
+def show_topics():
+    dictionary = gensim.corpora.dictionary.Dictionary.load(LDA_DICTIONARY_FILENAME)
+    lda_model = LdaMulticore.load(LDA_MODEL_FILENAME)
+    
+    topics = lda_model.show_topics(num_topics=LDA_COUNT_TOPICS, num_words=10, log=False, formatted=True)
 
-    print "Showing Examples..."
-    for (i, topic) in enumerate(topics):
-        print str(i) + ": " + topic
-    print wpLda[dictionary.doc2bow(u'der Schriftsteller'.lower().split(" "))]
-    print wpLda[dictionary.doc2bow(u'der portugiesische Staats­präsident Jorge Sampaio wie am'.lower().split(" "))]
-    print wpLda[dictionary.doc2bow(u'Harold Johnson ( 86 ), US-amerikanischer Boxer ( † 19 . Februar )'.lower().split(" "))]
-    print wpLda[dictionary.doc2bow(u'Der kirgisische Fünftausender Pik Alexander von Humboldt wurde 2003'.lower().split(" "))]
-    print wpLda[dictionary.doc2bow(u'Textil­unternehmer und Sozial­reformer Bernhard Greuter kommt zur Welt'.lower().split(" "))]
-    print wpLda[dictionary.doc2bow(u'In Wien stirbt Joseph II . , seit 1765 Kaiser'.lower().split(" "))]
-    print "---"
-    print wpLda[dictionary.doc2bow(u'Die NASA-Mond­sonde Ranger 8 funkt , wie'.lower().split(" "))]
-    print wpLda[dictionary.doc2bow(u'vermutlich terroristisch motivierten Anschlägen in Kopenhagen wurden'.lower().split(" "))]
-    print wpLda[dictionary.doc2bow(u'Gemäß dem 2. Minsker Abkommen ist eine'.lower().split(" "))]
-    """
+    print("List of topics:")
+    for i, topic in enumerate(topics):
+        # not adding topic to the tuple prevents unicode errors
+        print("%3d:" % (i,), topic)
 
-"""
-def examplesGen(startAtArticle=0, examplesFilePath=EXAMPLES_FILE_PATH):
-	skippedArticlesSoFar = 0
-	processedArticlesSoFar = 0
-	
-	with open(examplesFilePath, 'rU') as f:
-		for article in f:
-			article = article.decode("utf-8").strip()
-			
-			if len(article) > 0:
-				if skippedArticlesSoFar < startAtArticle:
-					skippedArticlesSoFar += 1
-				else:
-					tokens = article.lower().strip().split(" ")
-					yield tokens
-					#tokenChunks = chunks(tokens, PER_EXAMPLE_CHUNK_SIZE)
-					#for tokenChunk in tokenChunks:
-					#	yield tokenChunk
-					
-def chunks(of, chunkSize):
-    for i in xrange(0, len(of), chunkSize):
-        yield of[i:i + chunkSize]
-
-
-class MyCorpus(object):
-	dictionary = None
-	examplesFilePath = None
-	loaded = 0
-	
-	def __init__(self, dictionary, examplesFilePath=EXAMPLES_FILE_PATH):
-		self.dictionary = dictionary
-		self.examplesFilePath = examplesFilePath
-		
-	def __iter__(self):
-		with open(self.examplesFilePath, 'rU') as f:
-			for article in f:
-				article = article.decode("utf-8").strip()
-				if len(article) > 0:
-					if self.loaded < 50000:
-						if self.loaded % 500 == 0:
-							print "Loaded " + str(self.loaded) + " articles..."
-						self.loaded += 1
-						
-						tokens = article.lower().strip().split(" ")
-						tokenChunks = chunks(tokens, PER_EXAMPLE_CHUNK_SIZE)
-						for tokenChunk in tokenChunks:
-							yield self.dictionary.doc2bow(tokenChunk)
-						# assume there's one document per line, tokens separated by whitespace
-						#yield self.dictionary.doc2bow(article.lower().split())
-"""
+def test_lda(sentence):
+    if sentence is None or len(sentence) < 1:
+        raise Exception("Missing or empty 'sentence' argument.")
+    
+    sentence = sentence.decode("utf-8").lower().strip().split(" ")
+    #print(sentence)
+    if len(sentence) != PER_EXAMPLE_WINDOW_SIZE:
+        print("[INFO] the token size of your sentence does not match the defined window size (%d vs %d)." % (len(sentence), PER_EXAMPLE_WINDOW_SIZE))
+    
+    dictionary = gensim.corpora.dictionary.Dictionary.load(LDA_DICTIONARY_FILENAME)
+    lda_model = LdaMulticore.load(LDA_MODEL_FILENAME)
+    
+    bow = dictionary.doc2bow(sentence)
+    print(lda_model[bow])
 
 # --------------------
 
