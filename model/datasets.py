@@ -127,10 +127,10 @@ class Window(Article):
         # 2nd dimension: token
         # 3rd dimension: values (for this token and feature, usually just one value, sometimes more,
         #                        e.g. "w2vc=975")
-        features_values = [feature.convert_sentence(self) for feature in features]
+        features_values = [feature.convert_window(self) for feature in features]
         
         for token in self.tokens:
-            token.features_values = []
+            token.feature_values = []
         
         for feature_values in features_values:
             assert type(feature_values) == type(list())
@@ -141,13 +141,15 @@ class Window(Article):
         # self.token.feature_values now is a simple list
         # of feature values, eg ["w2v=875", "bc=48", ...]
     
-    def get_feature_values_list(self, word_index):
+    def get_feature_values_list(self, word_index, skipchain_left, skipchain_right):
         assert word_index >= 0
         assert word_index < len(self.tokens)
 
         all_feature_values = []
 
-        for i, token in enumerate(self.tokens):
+        start = word_index - 1 - skipchain_left
+        end = word_index + 1 + skipchain_right
+        for i, token in enumerate(self.tokens[start:end]):
             diff = i - word_index
             feature_values = ["%d:%s" % (diff, feature_value) for feature_value in token.feature_values]
             all_feature_values.extend(feature_values)
