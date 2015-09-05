@@ -42,8 +42,9 @@ COUNT_EXAMPLES = 100000
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("identifier",
+    parser.add_argument("--identifier", required=True,
                         help="A short name/identifier for your experiment, e.g. 'ex42b'.")
+    args = parser.parse_args()
     
     trainer = pycrfsuite.Trainer(verbose=True)
     
@@ -70,7 +71,7 @@ def main():
     print("Training...")
     if MAX_ITERATIONS is not None and MAX_ITERATIONS > 0:
         trainer.set_params({'max_iterations': MAX_ITERATIONS})
-    trainer.train(identifier)
+    trainer.train(args.identifier)
 
 def create_features(verbose=True):
     print("Loading unigrams...")
