@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
+import random
+import gensim
 from gensim.models.ldamodel import LdaModel
 from gensim.models.ldamulticore import LdaMulticore
 
 class LdaWrapper():
-    def __init__(lda_filepath, dictionary_filepath, cache_max_size=0):
+    def __init__(self, lda_filepath, dictionary_filepath, cache_max_size=0):
         self.lda = LdaMulticore.load(lda_filepath)
         self.dictionary = gensim.corpora.dictionary.Dictionary.load(dictionary_filepath)
         self.cache = dict()
