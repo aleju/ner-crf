@@ -9,7 +9,7 @@ class Unigrams():
         self.word_to_count = OrderedDict()
         self.sum_of_counts = 0
         if filepath is not None:
-            self.fill_from_file(filepath)
+            self.fill_from_file(filepath, skip_first_n=skip_first_n, max_count_words=max_count_words)
     
     def clear(self):
         self.word_to_rank = OrderedDict()
