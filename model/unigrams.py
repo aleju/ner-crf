@@ -35,7 +35,7 @@ class Unigrams():
                             self.sum_of_counts += count
                             added += 1
                 else:
-                    print("[Warning] found %d columns in unigrams file at line %d, expected 2; ignored the line" % (len(columns), line_idx))
+                    print("[Warning] Expected 2 columns in unigrams file at line %d, got %d" % (line_idx, len(columns)))
     
     def fill_from_articles(self, filepath, verbose=False):
         self.fill_from_articles_labels(filepath, labels=None, verbose=verbose)

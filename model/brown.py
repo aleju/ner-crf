@@ -16,7 +16,7 @@ class BrownClusters():
             last_count = -1
             cluster_idx = 1
             
-            for line in f:
+            for line_idx, line in enumerate(f):
                 columns = line.decode("utf-8").strip().split("\t")
                 if len(columns) == 3:
                     bitchain, word, count = columns
@@ -28,6 +28,8 @@ class BrownClusters():
                     
                     self.word_to_cluster[word] = cluster_idx
                     self.word_to_bitchain[word] = bitchain
+                else:
+                    print("[Warning] Expected 3 columns in brown clusters file at line %d, got %d" % (line_idx, len(columns)))
 
     def get_cluster_of(self, word, default=-1):
         if word in self.word_to_cluster:
