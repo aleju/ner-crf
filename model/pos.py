@@ -1,20 +1,22 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 import nltk
+import shelve
+import random
 
 class PosTagger():
-    def __init__(stanford_postagger_jar_filepath, stanford_model_filepath, cache_filepath=None):
+    def __init__(self, stanford_postagger_jar_filepath, stanford_model_filepath, cache_filepath=None):
         self.cache_synch_prob = 2 # in percent, 1 to 100
         self.max_string_length = 2000
         self.min_string_length = 1
         
-        self.tagger = nltk.tag.stanford.POSTagger(stanford_postagger_jar_filepath,
-                                                  stanford_model_filepath,
-                                                  encoding="utf-8")
+        self.tagger = nltk.tag.stanford.StanfordPOSTagger(stanford_model_filepath,
+                                                          stanford_postagger_jar_filepath,
+                                                          encoding="utf-8")
         self.cache_filepath = cache_filepath
         self.cache = shelve.open(cache_filepath) if cache_filepath is not None else None
     
-    def tag(tokens):
+    def tag(self, tokens):
         if self.cache is None:
             return self.tag_uncached(tokens)
         else:
@@ -32,7 +34,7 @@ class PosTagger():
                 return tagged
     
     
-    def tag_uncached(tokens):
+    def tag_uncached(self, tokens):
         # length of each word + count of required whitespaces between each word
         # max() to avoid -1 if the list of tokens in empty
         total_length = sum([len(token) for token in tokens]) + (max(len(tokens) - 1, 0))
@@ -45,5 +47,5 @@ class PosTagger():
         
         return self.tagger.tag(tokens)
     
-    def synchronize_cache():
-        self.cache.synch()
+    def synchronize_cache(self):
+        self.cache.sync()
