@@ -203,10 +203,10 @@ class Window(Article):
 
         all_feature_values = []
 
-        start = word_index - 1 - skipchain_left
+        start = word_index - skipchain_left
         end = word_index + 1 + skipchain_right
         for i, token in enumerate(self.tokens[start:end]):
-            diff = i - word_index
+            diff = start + i - word_index
             feature_values = ["%d:%s" % (diff, feature_value) for feature_value in token.feature_values]
             all_feature_values.extend(feature_values)
 
