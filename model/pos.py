@@ -6,13 +6,14 @@ import random
 
 class PosTagger():
     def __init__(self, stanford_postagger_jar_filepath, stanford_model_filepath, cache_filepath=None):
-        self.cache_synch_prob = 2 # in percent, 1 to 100
         self.max_string_length = 2000
         self.min_string_length = 1
         
         self.tagger = nltk.tag.stanford.StanfordPOSTagger(stanford_model_filepath,
                                                           stanford_postagger_jar_filepath,
                                                           encoding="utf-8")
+
+        self.cache_synch_prob = 2 # in percent, 1 to 100
         self.cache_filepath = cache_filepath
         self.cache = shelve.open(cache_filepath) if cache_filepath is not None else None
     
