@@ -1,18 +1,35 @@
 # -*- coding: utf-8 -*-
+"""Functions to load data from the corpus."""
 from __future__ import absolute_import, division, print_function, unicode_literals
 import re
 from unidecode import unidecode
 from collections import Counter
-
-NO_NE_LABEL = "O"
+from config import *
 
 def split_to_chunks(of, chunk_size):
+    """Splits a list to smaller chunks.
+    Args:
+        of: The list/iterable to split.
+        chunk_size: The maximum size of each smaller part/chunk.
+    Returns:
+        Generator of lists (i.e. list of lists).
+    """
     assert of is not None
 
     for i in range(0, len(of), chunk_size):
         yield of[i:i + chunk_size]
 
 def load_articles(filepath, start_at=0):
+    """Loads all articles (documents) from a corpus.
+    
+    The corpus is expected to be a UTF-8 encoded textfile with one article/document per line.
+    
+    Args:
+        filepath: The filepath to the corpus file.
+        start_at: The index of the line to start at. (Default is 0.)
+    Returns:
+        Generator of Article objects, i.e. list of Article.
+    """
     skipped = 0
     with open(filepath, "r") as f:
         for article in f:
@@ -25,6 +42,21 @@ def load_articles(filepath, start_at=0):
                     yield Article(article)
 
 def load_windows(articles, window_size, features=None, every_nth_window=1, only_labeled_windows=False):
+    """Loads smaller windows with a maximum size per window from a generator of articles.
+    
+    Args:
+        articles: Generator of articles, as provided by load_articles().
+        window_size: Maximum length of each window (in tokens/words).
+        features: Optional features to apply to each window. (Default is None, don't apply
+            any features.)
+        every_nth_window: How often windows are ought to be returned, e.g. a value of 3 will
+            skip two windows and return the third one. This can spread the examples over more
+            (different) articles. (Default is 1, return every window.)
+        only_labeled_windows: If set to True, the function will only return windows that contain
+            at least one labeled token (at leas one named entity). (Default is False.)
+    Returns:
+        Generator of Window objects, i.e. list of Window objects.
+    """
     processed_windows = 0
     for article in articles:
         count = article.count_labels()
@@ -47,6 +79,14 @@ def load_windows(articles, window_size, features=None, every_nth_window=1, only_
                     processed_windows += 1
 
 def cleanup_unicode(in_str):
+    """Converts unicode strings to ascii.
+    The function uses mostly unidecode() and contains some additional mappings for german umlauts.
+    
+    Args:
+        in_str: String in UTF-8.
+    Returns:
+        String (ascii).
+    """
     result = in_str
 
     mappings = [(u"ü", "ue"), (u"ö", "oe"), (u"ä", "ae"),
@@ -59,54 +99,36 @@ def cleanup_unicode(in_str):
 
     return result
 
-"""
-def tokens_to_xy(tokens, window_left, window_right, active_features=None):
-    tokensOrig = []
-    tokensInUnicode = []
-    tokens = []
-    features = []
-    labels = []
-
-    tokens_orig = tokens
-    tokens_cleaned = list()
-    tokens_unicode = list(tokens)
-
-    labels = [NO_NE_LABEL] * len(tokens)
-
-    for i, token in enumerate(tokens_orig):
-        pos = token.rfind("/")
-        if pos > -1:
-            posUnicode = tokensInUnicode[i].rfind("/")
-            end = token[-(len(token) - pos) + 1:]
-            if end in ["PER"]:
-                tokens[i] = token[0:pos]
-                tokensInUnicode[i] = tokensInUnicode[i][0:posUnicode]
-                labels[i] = end
-            elif end in ["LOC", "ORG", "MISC"]:
-                tokens[i] = token[0:pos]
-                tokensInUnicode[i] = tokensInUnicode[i][0:posUnicode]
-                labels[i] = NO_NE_LABEL
-
-    features = tokens2features(tokens, tokensInUnicode, windowLeftSize, windowRightSize, activeFeatures=activeFeatures)
-
-    return (features, labels, tokensInUnicode, tokens)
-"""
-
 class Article(object):
+    """Class modelling an article/document from the corpus. It's mostly a wrapper around a list
+    of Token objects."""
     def __init__(self, text):
+        """Initialize a new Article object.
+        Args:
+            text: The string content of the article/document.
+        """
         text = re.sub(r"[\t ]+", " ", text)
         tokens_str = [token_str.strip() for token_str in text.strip().split(" ")]
         self.tokens = [Token(token_str) for token_str in tokens_str if len(token_str) > 0]
     
     def get_content_as_string(self):
+        """Returns the article's content as string.
+        This is not neccessarily identical to the original text content, because multi-whitespaces
+        are replaced by single whitespaces.
+        
+        Returns:
+            string (article/document content).
+        """
         return " ".join([token.word for token in self.tokens])
     
     def get_label_counts(self, add_no_ne_label=False):
-        """
-        counts = defaultdict(0)
-        for token in tokens:
-            if token.label != NO_NE_LABEL or add_no_ne_label:
-                counts[token.label] += 1
+        """Returns the count of each label in the article/document.
+        Count means here: the number of words that have the label.
+        
+        Args:
+            add_no_ne_label: Whether to count how often unlabeled words appear. (Default is False.)
+        Returns:
+            List of tuples of the form (label as string, count as integer).
         """
         if add_no_ne_label:
             counts = Counter([token.label for token in self.tokens])
@@ -115,13 +137,36 @@ class Article(object):
         return counts.most_common()
     
     def count_labels(self, add_no_ne_label=False):
+        """Returns how many named entity tokens appear in the article/document.
+        
+        Args:
+            add_no_ne_label: Whether to also count unlabeled words. (Default is False.)
+        Returns:
+            Count of all named entity tokens (integer).
+        """
         return sum([count[1] for count in self.get_label_counts(add_no_ne_label=add_no_ne_label)])
 
 class Window(Article):
+    """Encapsulates a small window of text/tokens."""
     def __init__(self, tokens):
+        """Initialize a new Window object.
+        
+        Args:
+            tokens: The tokens/words contained in the text window, provided as list of Token
+                objects.
+        """
         self.tokens = tokens
 
     def apply_features(self, features):
+        """Applies a list of feature generators to the tokens of this window.
+        Each feature generator will then generate a list of featue values (as strings) for each
+        token. Each of these lists can be empty. The lists are saved in the tokens and can later
+        on be requested multiple times without the generation overhead (which can be heavy for
+        some features).
+        
+        Args:
+            features: A list of feature generators from features.py .
+        """
         # feature_values is a multi-dimensional list
         # 1st dimension: Feature (class)
         # 2nd dimension: token
@@ -132,16 +177,27 @@ class Window(Article):
         for token in self.tokens:
             token.feature_values = []
         
+        # After this, each self.token.feature_values will be a simple list
+        # of feature values, e.g. ["w2v=875", "bc=48", ...]
         for feature_values in features_values:
             assert type(feature_values) == type(list())
             assert len(feature_values) == len(self.tokens)
             
             for token_idx in range(len(self.tokens)):
                 self.tokens[token_idx].feature_values.extend(feature_values[token_idx])
-        # self.token.feature_values now is a simple list
-        # of feature values, eg ["w2v=875", "bc=48", ...]
     
     def get_feature_values_list(self, word_index, skipchain_left, skipchain_right):
+        """Generates a list of feature values (strings) for one token/word in the window.
+        
+        Args:
+            word_index: The index of the word/token for which to generate the featueres.
+            skipchain_left: How many words to the left will be included among the features of
+                the requested word. E.g. a value of 1 could lead to a list like
+                ["-1:w2vc=123", "-1:l=30", "0:w2vc=18", "0:l=4"].
+            skipchain_right: Like skipchain_left, but to the right side.
+        Returns:
+            List of strings (list of feature values).
+        """
         assert word_index >= 0
         assert word_index < len(self.tokens)
 
@@ -160,7 +216,20 @@ class Window(Article):
         return [token.label for token in self.tokens]
 
 class Token(object):
+    """Encapsulates a token/word.
+    Members:
+        token.original: The original token, i.e. the word _and_ the label, e.g. "John/PER".
+        token.word: The string content of the token, without the label.
+        token.label: The label of the token.
+        token.feature_values: The feature values, after they have been applied.
+            (See Window.apply_features().)
+    """
     def __init__(self, original):
+        """Initialize a new Token object.
+        Args:
+            original: The original word as found in the text document, including the label,
+                e.g. "foo", "John/PER".
+        """
         self.original = original
         self.word = original
         self.label = NO_NE_LABEL
@@ -175,17 +244,11 @@ class Token(object):
     
     @property
     def word_ascii(self):
+        """Get the ascii value of the token.
+        This has its own function as it takes time to compute and isn't even used currently.
+        Returns:
+            Token string as ASCII.
+        """
         if self._word_ascii is None:
             self._word_ascii = cleanup_unicode(self.word)
         return self._word_ascii
-
-"""
-def count_tags(article_str):
-    counts = {"PER": article_str.count("/PER"),
-              "LOC": article_str.count("/LOC"),
-              "ORG": article_str.count("/ORG"),
-              "MISC": article_str.count("/MISC")}
-    counts["max"] = max([count for count in counts.itervalues()])
-    counts["sum"] = sum([count for count in counts.itervalues()])
-    return counts
-"""
