@@ -12,12 +12,13 @@ class W2VClusters():
     def fill_from_file(self, filepath):
         with open(filepath, "r") as f:
             for line_idx, line in enumerate(f):
-                columns = line.decode("utf-8").strip().split("\t")
+                columns = line.decode("utf-8").strip().split(" ")
                 if len(columns) == 2:
-                    word, cluster_idx = columns
+                    word = columns[0]
+                    cluster_idx = int(columns[1])
                     self.word_to_cluster[word] = cluster_idx
                 else:
-                    print("[Warning] Expected 2 columns in w2v-file at line %d, got %d" % (line_idx, len(columns)))
+                    print("[Warning] Expected 2 columns in w2v clusters file at line %d, got %d" % (line_idx, len(columns)))
     
     def get_cluster_of(self, word, default=-1):
         if word in self.word_to_cluster:
