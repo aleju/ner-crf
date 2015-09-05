@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+"""
+    Execute via:
+        python -m preprocessing/collect_unigrams
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 import os
 from model.unigrams import Unigrams

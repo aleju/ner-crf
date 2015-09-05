@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*
+"""
+    Execute via:
+        python -m preprocessing/collect_unigrams --dict --train
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 import gensim
 #from gensim.models.ldamodel import LdaModel
