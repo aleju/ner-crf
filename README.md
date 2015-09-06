@@ -38,9 +38,12 @@ The used features are:
 ## Corpus
 A large annotated corpus is required that *(a)* contains one article/document per line, *(b)* is tokenized (e.g. by the stanford parser) and *(c)* contains annotated named entities of the form `word/LABEL`.
 Example (each article shortened, german):
+
 > Ang/PER Lee/PER ( $foreign_language ; * 23 . Oktober 1954 in Pingtung/LOC , Taiwan/LOC ) ist ein US-amerikanisch-taiwanischer Filmregisseur , Drehbuchautor und Produzent . Er ist ...
 > Actinium ( latinisiert von griechisch ακτίνα , aktína „ Strahl “ ) ist ein radioaktives chemisches Element mit dem Elementsymbol Ac und der Ordnungszahl 89 . Das Element ...
 > Anschluss ist in der Soziologie ein Fachbegriff aus der Systemtheorie von Niklas/PER Luhmann/PER und bezeichnet die in einer sozialen Begegnung auf eine Selektion der ...
+
+(*Note*: Github markdown eats up the linebreak after every `...`.)
 Notice the `/PER` and `/LOC` labels. BIO codes will automatically be normalized to non-BIO codes (e.g. `B-PER` becomes `PER` or `I-LOC` becomes `LOC`).
 
 You will also need [word2vec](https://code.google.com/p/word2vec/) clusters (can come from that corpus or a different one) and [brown clusters](https://github.com/percyliang/brown-cluster) (same).
@@ -67,7 +70,6 @@ Results on the Germeval 2014 NER corpus:
 ----------------|-----------|----------|----------|----------
           **O** |      0.97 |     1.00 |     0.98 |    23487
         **PER** |      0.84 |     0.73 |     0.78 |      525
-----------------|-----------|----------|----------|----------
 **avg / total** |      0.95 |     0.96 |     0.95 |    25002
 
 *Note:* ~1000 tokens are missing, because they belonged to LOC, ORG or MISC. The CRF model was not really trained on these labels and therefore performed poorly. It was only properly trained on PER.
@@ -79,10 +81,9 @@ Results on an automatically annotated Wikipedia corpus (therefore some PER label
 ----------------|-----------|----------|----------|----------
           **O** |  0.97     | 0.98     | 0.98     | 182952
         **PER** |  0.88     | 0.85     | 0.87     | 8854
-----------------|-----------|----------|----------|----------
 **avg / total** |  0.95     | 0.95     | 0.95     | 199239
 
-*Note:* Same as above, LOC, ORG and MISC where removed from the table.
+*Note:* Same as above, LOC, ORG and MISC were removed from the table.
 
 # Licence
 
