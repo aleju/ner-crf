@@ -81,7 +81,10 @@ def train(args):
     # POS tags and LDA results are cached, so the second run through this part will be significantly
     # faster.
     print("Adding example windows (up to max %d)..." % (COUNT_WINDOWS_TRAIN))
-    append_windows(trainer, windows, nb_append=COUNT_WINDOWS_TRAIN, nb_skip=COUNT_WINDOWS_TEST)
+    examples = generate_examples(windows, nb_append=COUNT_WINDOWS_TRAIN, nb_skip=COUNT_WINDOWS_TEST,
+                                 verbose=True)
+    for feature_values_lists, labels in examples:
+        trainer.append(feature_values_lists, labels)
     
     # Train the model
     # this may take several hours
@@ -93,11 +96,24 @@ def train(args):
     trainer.train(args.identifier)
 
 def generate_examples(windows, nb_append=None, nb_skip=0, verbose=True):
+    """Generates example pairs of feature lists (one per token) and labels.
+    
+    Args:
+        windows: The windows to generate features and labels from, see load_windows().
+        nb_append: How many windows to append max or None if unlimited. (Default is None.)
+        nb_skip: How many windows to skip at the start. (Default is 0.)
+        verbose: Whether to print status messages. (Default is True.)
+    Returns:
+        Pairs of (features, labels),
+        where features is a list of lists of strings,
+            e.g. [["foo=bar", "asd=fgh"], ["foo=not_bar", "yikes=True"], ...]
+        and labels is a list of strings,
+            e.g. ["PER", "O", "O", "LOC", ...].
+    """
     skipped = 0
     added = 0
     for window in windows:
-        # skip the first COUNT_WINDOWS_TEST windows, because we are going to use them
-        # to test our trained model
+        # skip the first couple of windows, if nb_skip is > 0
         if skipped < nb_skip:
             skipped += 1
         else:
@@ -108,9 +124,11 @@ def generate_examples(windows, nb_append=None, nb_skip=0, verbose=True):
             for word_idx in range(len(window.tokens)):
                 fvl = window.get_feature_values_list(word_idx, SKIPCHAIN_LEFT, SKIPCHAIN_RIGHT)
                 feature_values_lists.append(fvl)
-            # add label chain and feature chain
+            # yield (features, labels) pair
             yield (feature_values_lists, labels)
             
+            # print message every nth window
+            # and stop if nb_append is reached
             added += 1
             if verbose and added % 500 == 0:
                 if nb_append is None:
@@ -119,11 +137,6 @@ def generate_examples(windows, nb_append=None, nb_skip=0, verbose=True):
                     print("Added %d of max %d windows" % (added, nb_append))
             if nb_append is not None and added == nb_append:
                 break
-
-def append_windows(trainer, windows, nb_append=None, nb_skip=0, verbose=True):
-    examples = generate_examples(windows, nb_append=nb_append, nb_skip=nb_skip, verbose=verbose)
-    for (feature_values_lists, labels) in examples:
-        trainer.append(feature_values_lists, labels)
 
 def create_features(verbose=True):
     """This method creates all feature generators.
@@ -204,6 +217,8 @@ def create_features(verbose=True):
     ]
     
     return result
+
+# ----------------
 
 if __name__ == "__main__":
     main()
