@@ -14,31 +14,9 @@ from model.w2v import W2VClusters
 from model.datasets import load_windows, load_articles
 import model.features as features
 
-random.seed(42)
+from config import *
 
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-ARTICLES_FILEPATH = "/media/aj/grab/nlp/corpus/processed/wikipedia-ner/annotated-fulltext.txt"
-BROWN_CLUSTERS_FILEPATH = "/media/aj/ssd2a/nlp/corpus/brown/wikipedia-de/brown_c1000_min12/paths"
-#UNIGRAMS_FILEPATH = "/media/aj/ssd2a/nlp/corpus/processed/wikipedia-de/ngrams-1.txt"
-UNIGRAMS_FILEPATH = os.path.join(CURRENT_DIR, "preprocessing/unigrams.txt")
-UNIGRAMS_PERSON_FILEPATH = os.path.join(CURRENT_DIR, "preprocessing/unigrams_per.txt")
-LDA_FILEPATH = os.path.join(CURRENT_DIR, "preprocessing/lda_model")
-LDA_DICTIONARY_FILEPATH = os.path.join(CURRENT_DIR, "preprocessing/lda_dictionary")
-LDA_CACHE_MAX_SIZE = 100000
-STANFORD_DIR = "/media/aj/ssd2a/nlp/nlpjava/stanford-postagger-full-2013-06-20/stanford-postagger-full-2013-06-20/"
-STANFORD_POS_JAR_FILEPATH = os.path.join(STANFORD_DIR, "stanford-postagger-3.2.0.jar")
-STANFORD_MODEL_FILEPATH = os.path.join(STANFORD_DIR, "models/german-fast.tagger")
-POS_TAGGER_CACHE_FILEPATH = os.path.join(CURRENT_DIR, "pos.cache")
-UNIGRAMS_SKIP_FIRST_N = 0
-UNIGRAMS_MAX_COUNT_WORDS = 1000
-W2V_CLUSTERS_FILEPATH = "/media/aj/ssd2a/nlp/corpus/word2vec/wikipedia-de/classes1000_cbow0_size300_neg0_win10_sample1em3_min50.txt"
-WINDOW_SIZE = 50
-SKIPCHAIN_LEFT = 5
-SKIPCHAIN_RIGHT = 5
-LDA_WINDOW_LEFT_SIZE = 5
-LDA_WINDOW_RIGHT_SIZE = 5
-MAX_ITERATIONS = None
-COUNT_EXAMPLES = 100000
+random.seed(42)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -54,19 +32,30 @@ def main():
     print("Loading windows...")
     windows = load_windows(load_articles(ARTICLES_FILEPATH), WINDOW_SIZE, features, only_labeled_windows=True)
     
-    print("Adding example windows (up to max %d)..." % (COUNT_EXAMPLES))
+    print("Adding example windows (up to max %d)..." % (COUNT_WINDOWS_TRAIN))
+    skipped = 0
     added = 0
     for window in windows:
-        labels = window.get_labels()
-        feature_values_lists = []
-        for word_idx in range(len(window.tokens)):
-            feature_values_lists.append(window.get_feature_values_list(word_idx, SKIPCHAIN_LEFT, SKIPCHAIN_RIGHT))
-        trainer.append(feature_values_lists, labels)
-        added += 1
-        if added % 500 == 0:
-            print("Added %d of max %d windows" % (added, COUNT_EXAMPLES))
-        if added == COUNT_EXAMPLES:
-            break
+        # skip the first COUNT_WINDOWS_TEST windows, because we are going to use them
+        # to test our trained model
+        if skipped < COUNT_WINDOWS_TEST:
+            skipped += 1
+        else:
+            labels = window.get_labels()
+            feature_values_lists = []
+            for word_idx in range(len(window.tokens)):
+                fvl = window.get_feature_values_list(word_idx, SKIPCHAIN_LEFT, SKIPCHAIN_RIGHT)
+                #print([token.word for token in window.tokens])
+                #print(word_idx)
+                #print(labels)
+                #print(fvl)
+                feature_values_lists.append(fvl)
+            trainer.append(feature_values_lists, labels)
+            added += 1
+            if added % 500 == 0:
+                print("Added %d of max %d windows" % (added, COUNT_WINDOWS_TRAIN))
+            if added == COUNT_WINDOWS_TRAIN:
+                break
     
     print("Training...")
     if MAX_ITERATIONS is not None and MAX_ITERATIONS > 0:
@@ -90,7 +79,7 @@ def create_features(verbose=True):
     print("Loading W2V clusters...")
     w2vc = W2VClusters(W2V_CLUSTERS_FILEPATH)
     print("Loading LDA...")
-    lda = LdaWrapper(LDA_FILEPATH, LDA_DICTIONARY_FILEPATH, cache_max_size=LDA_CACHE_MAX_SIZE)
+    lda = LdaWrapper(LDA_FILEPATH, LDA_DICTIONARY_FILEPATH, cache_filepath=LDA_CACHE_FILEPATH)
     print("Loading POS-Tagger...")
     pos = PosTagger(STANFORD_POS_JAR_FILEPATH, STANFORD_MODEL_FILEPATH, cache_filepath=POS_TAGGER_CACHE_FILEPATH)
     
