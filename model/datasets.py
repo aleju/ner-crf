@@ -203,8 +203,8 @@ class Window(Article):
 
         all_feature_values = []
 
-        start = word_index - skipchain_left
-        end = word_index + 1 + skipchain_right
+        start = max(0, word_index - skipchain_left)
+        end = min(len(self.tokens), word_index + 1 + skipchain_right)
         for i, token in enumerate(self.tokens[start:end]):
             diff = start + i - word_index
             feature_values = ["%d:%s" % (diff, feature_value) for feature_value in token.feature_values]
@@ -236,7 +236,10 @@ class Token(object):
         if "/" in original:
             pos = original.rfind("/")
             end = original[pos+1:]
-            if end in ["PER", "LOC", "ORG", "MISC"]:
+            # remove parts of BIO encoding, e.g. remove "B-" from "B-PER" or "I-" from "I-PER"
+            if REMOVE_BIO_ENCODING:
+                end = end.replace("B-", "").replace("I-", "")
+            if end in LABELS:
                 self.word = original[0:pos]
                 self.label = end
         self._word_ascii = None
