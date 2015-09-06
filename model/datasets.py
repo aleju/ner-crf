@@ -61,20 +61,26 @@ def load_windows(articles, window_size, features=None, every_nth_window=1, only_
     """
     processed_windows = 0
     for article in articles:
+        # count how many labels there are in the article
         count = article.count_labels()
-        #counts = article.get_label_counts()
-        #counts_sum = sum([count[1] for count in counts])
         
         if count / len(article.tokens) >= 0.10:
+            # ignore articles with too many labels, because they are too unrealistic
+            # (e.g. in Wikipedia lists of people or disambiguation sites)
             pass
         elif only_labeled_windows and count == 0:
+            # ignore articles completely that have no labels at all, if that was requested via
+            # the parameters
             pass
         else:
+            # split the tokens in the article to windows
             token_windows = split_to_chunks(article.tokens, window_size)
             for token_window in token_windows:
                 window = Window([token for token in token_window])
+                # ignore the window if it contains no labels and that was requested via parameters
                 if not only_labeled_windows or window.count_labels() > 0:
                     if processed_windows % every_nth_window == 0:
+                        # generate features for all tokens in the window
                         if features is not None:
                             window.apply_features(features)
                         yield window
