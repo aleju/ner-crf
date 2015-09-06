@@ -78,22 +78,22 @@ def create_features(verbose=True):
     
     # create feature generators
     result = [
-        features.StartsWithUppercaseFeature(),
-        features.TokenLengthFeature(),
-        features.ContainsDigitsFeature(),
-        features.ContainsPunctuationFeature(),
-        features.OnlyDigitsFeature(),
-        features.OnlyPunctuationFeature(),
-        features.W2VClusterFeature(w2vc),
-        features.BrownClusterFeature(bc),
-        features.BrownClusterBitsFeature(bc),
-        features.GazetteerFeature(gaz),
-        features.WordPatternFeature(),
-        features.UnigramRankFeature(ug_all_top),
-        features.PrefixFeature(),
-        features.SuffixFeature(),
-        features.POSTagFeature(pos),
-        features.LDATopicFeature(lda, LDA_WINDOW_LEFT_SIZE, LDA_WINDOW_LEFT_SIZE)
+        StartsWithUppercaseFeature(),
+        TokenLengthFeature(),
+        ContainsDigitsFeature(),
+        ContainsPunctuationFeature(),
+        OnlyDigitsFeature(),
+        OnlyPunctuationFeature(),
+        W2VClusterFeature(w2vc),
+        BrownClusterFeature(bc),
+        BrownClusterBitsFeature(bc),
+        GazetteerFeature(gaz),
+        WordPatternFeature(),
+        UnigramRankFeature(ug_all_top),
+        PrefixFeature(),
+        SuffixFeature(),
+        POSTagFeature(pos),
+        LDATopicFeature(lda, LDA_WINDOW_LEFT_SIZE, LDA_WINDOW_LEFT_SIZE)
     ]
     
     return result
