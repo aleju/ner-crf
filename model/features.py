@@ -1,7 +1,93 @@
 # -*- coding: utf-8 -*-
-"""Various classes to convert windows (of words/tokens) to feature values."""
+"""
+Contains:
+    1. Various classes (feature generators) to convert windows (of words/tokens) to feature values.
+       Each feature value is a string, e.g. "starts_with_uppercase=1", "brown_cluster=123".
+    2. A method to create all feature generators.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 import re
+
+def create_features(verbose=True):
+    """This method creates all feature generators.
+    The feature generators will be used to convert windows of tokens to their string features.
+    
+    This function may run for a few minutes.
+    
+    Args:
+        verbose: Whether to output messages.
+    Returns:
+        List of feature generators
+    """
+    
+    def print_if_verbose(msg):
+        """This method prints a message only if verbose was set to True, otherwise does nothing.
+        Args:
+            msg: The message to print.
+        """
+        if verbose:
+            print(msg)
+    
+    # Load the most common unigrams. These will be used as features.
+    print_if_verbose("Loading top N unigrams...")
+    ug_all_top = Unigrams(UNIGRAMS_FILEPATH, skip_first_n=UNIGRAMS_SKIP_FIRST_N, max_count_words=UNIGRAMS_MAX_COUNT_WORDS)
+    
+    # Load all unigrams. These will be used to create the Gazetteer.
+    print_if_verbose("Loading all unigrams...")
+    ug_all = Unigrams(UNIGRAMS_FILEPATH)
+    
+    # Load all unigrams of person names (PER). These will be used to create the Gazetteer.
+    print_if_verbose("Loading person name unigrams...")
+    ug_names = Unigrams(UNIGRAMS_PERSON_FILEPATH)
+    
+    # Create the gazetteer. The gazetteer will contain all names from ug_names that have a higher
+    # frequency among those names than among all unigrams (from ug_all).
+    print_if_verbose("Creating gazetteer...")
+    gaz = Gazetteer(ug_names, ug_all)
+    
+    # Unset ug_all and ug_names because we don't need them any more and they need quite a bit of
+    # RAM.
+    ug_all = None
+    ug_names = None
+    
+    # Load the mapping of word to brown cluster and word to brown cluster bitchain
+    print_if_verbose("Loading brown clusters...")
+    bc = BrownClusters(BROWN_CLUSTERS_FILEPATH)
+    
+    # Load the mapping of word to word2vec cluster
+    print_if_verbose("Loading W2V clusters...")
+    w2vc = W2VClusters(W2V_CLUSTERS_FILEPATH)
+    
+    # Load the wrapper for the gensim LDA
+    print_if_verbose("Loading LDA...")
+    lda = LdaWrapper(LDA_FILEPATH, LDA_DICTIONARY_FILEPATH, cache_filepath=LDA_CACHE_FILEPATH)
+    
+    # Load the wrapper for the stanford POS tagger
+    print_if_verbose("Loading POS-Tagger...")
+    pos = PosTagger(STANFORD_POS_JAR_FILEPATH, STANFORD_MODEL_FILEPATH, cache_filepath=POS_TAGGER_CACHE_FILEPATH)
+    
+    # create feature generators
+    result = [
+        features.StartsWithUppercaseFeature(),
+        features.TokenLengthFeature(),
+        features.ContainsDigitsFeature(),
+        features.ContainsPunctuationFeature(),
+        features.OnlyDigitsFeature(),
+        features.OnlyPunctuationFeature(),
+        features.W2VClusterFeature(w2vc),
+        features.BrownClusterFeature(bc),
+        features.BrownClusterBitsFeature(bc),
+        features.GazetteerFeature(gaz),
+        features.WordPatternFeature(),
+        features.UnigramRankFeature(ug_all_top),
+        features.PrefixFeature(),
+        features.SuffixFeature(),
+        features.POSTagFeature(pos),
+        features.LDATopicFeature(lda, LDA_WINDOW_LEFT_SIZE, LDA_WINDOW_LEFT_SIZE)
+    ]
+    
+    return result
+
 
 class StartsWithUppercaseFeature(object):
     """Generates a feature that describes, whether a given token starts with an uppercase letter."""

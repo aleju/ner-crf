@@ -19,7 +19,7 @@ from model.lda import LdaWrapper
 from model.pos import PosTagger
 from model.unigrams import Unigrams
 from model.w2v import W2VClusters
-from model.datasets import load_windows, load_articles
+from model.datasets import load_windows, load_articles, generate_examples
 import model.features as features
 
 # All capitalized constants come from this file
@@ -67,7 +67,7 @@ def train(args):
     # Create/Initialize the feature generators
     # this may take a few minutes
     print("Creating features...")
-    features = create_features()
+    features = features.create_features()
     
     # Initialize the window generator
     # each window has a fixed maximum size of tokens
@@ -94,129 +94,6 @@ def train(args):
         # the optimizer stops automatically after some iterations if this is not set
         trainer.set_params({'max_iterations': MAX_ITERATIONS})
     trainer.train(args.identifier)
-
-def generate_examples(windows, nb_append=None, nb_skip=0, verbose=True):
-    """Generates example pairs of feature lists (one per token) and labels.
-    
-    Args:
-        windows: The windows to generate features and labels from, see load_windows().
-        nb_append: How many windows to append max or None if unlimited. (Default is None.)
-        nb_skip: How many windows to skip at the start. (Default is 0.)
-        verbose: Whether to print status messages. (Default is True.)
-    Returns:
-        Pairs of (features, labels),
-        where features is a list of lists of strings,
-            e.g. [["foo=bar", "asd=fgh"], ["foo=not_bar", "yikes=True"], ...]
-        and labels is a list of strings,
-            e.g. ["PER", "O", "O", "LOC", ...].
-    """
-    skipped = 0
-    added = 0
-    for window in windows:
-        # skip the first couple of windows, if nb_skip is > 0
-        if skipped < nb_skip:
-            skipped += 1
-        else:
-            # chain of labels (list of strings)
-            labels = window.get_labels()
-            # chain of features (list of lists of strings)
-            feature_values_lists = []
-            for word_idx in range(len(window.tokens)):
-                fvl = window.get_feature_values_list(word_idx, SKIPCHAIN_LEFT, SKIPCHAIN_RIGHT)
-                feature_values_lists.append(fvl)
-            # yield (features, labels) pair
-            yield (feature_values_lists, labels)
-            
-            # print message every nth window
-            # and stop if nb_append is reached
-            added += 1
-            if verbose and added % 500 == 0:
-                if nb_append is None:
-                    print("Added %d windows" % (added, nb_append))
-                else:
-                    print("Added %d of max %d windows" % (added, nb_append))
-            if nb_append is not None and added == nb_append:
-                break
-
-def create_features(verbose=True):
-    """This method creates all feature generators.
-    The feature generators will be used to convert windows of tokens to their string features.
-    
-    This function may run for a few minutes.
-    
-    Args:
-        verbose: Whether to output messages.
-    Returns:
-        List of feature generators
-    """
-    
-    def print_if_verbose(msg):
-        """This method prints a message only if verbose was set to True, otherwise does nothing.
-        Args:
-            msg: The message to print.
-        """
-        if verbose:
-            print(msg)
-    
-    # Load the most common unigrams. These will be used as features.
-    print_if_verbose("Loading top N unigrams...")
-    ug_all_top = Unigrams(UNIGRAMS_FILEPATH, skip_first_n=UNIGRAMS_SKIP_FIRST_N, max_count_words=UNIGRAMS_MAX_COUNT_WORDS)
-    
-    # Load all unigrams. These will be used to create the Gazetteer.
-    print_if_verbose("Loading all unigrams...")
-    ug_all = Unigrams(UNIGRAMS_FILEPATH)
-    
-    # Load all unigrams of person names (PER). These will be used to create the Gazetteer.
-    print_if_verbose("Loading person name unigrams...")
-    ug_names = Unigrams(UNIGRAMS_PERSON_FILEPATH)
-    
-    # Create the gazetteer. The gazetteer will contain all names from ug_names that have a higher
-    # frequency among those names than among all unigrams (from ug_all).
-    print_if_verbose("Creating gazetteer...")
-    gaz = Gazetteer(ug_names, ug_all)
-    
-    # Unset ug_all and ug_names because we don't need them any more and they need quite a bit of
-    # RAM.
-    ug_all = None
-    ug_names = None
-    
-    # Load the mapping of word to brown cluster and word to brown cluster bitchain
-    print_if_verbose("Loading brown clusters...")
-    bc = BrownClusters(BROWN_CLUSTERS_FILEPATH)
-    
-    # Load the mapping of word to word2vec cluster
-    print_if_verbose("Loading W2V clusters...")
-    w2vc = W2VClusters(W2V_CLUSTERS_FILEPATH)
-    
-    # Load the wrapper for the gensim LDA
-    print_if_verbose("Loading LDA...")
-    lda = LdaWrapper(LDA_FILEPATH, LDA_DICTIONARY_FILEPATH, cache_filepath=LDA_CACHE_FILEPATH)
-    
-    # Load the wrapper for the stanford POS tagger
-    print_if_verbose("Loading POS-Tagger...")
-    pos = PosTagger(STANFORD_POS_JAR_FILEPATH, STANFORD_MODEL_FILEPATH, cache_filepath=POS_TAGGER_CACHE_FILEPATH)
-    
-    # create feature generators
-    result = [
-        features.StartsWithUppercaseFeature(),
-        features.TokenLengthFeature(),
-        features.ContainsDigitsFeature(),
-        features.ContainsPunctuationFeature(),
-        features.OnlyDigitsFeature(),
-        features.OnlyPunctuationFeature(),
-        features.W2VClusterFeature(w2vc),
-        features.BrownClusterFeature(bc),
-        features.BrownClusterBitsFeature(bc),
-        features.GazetteerFeature(gaz),
-        features.WordPatternFeature(),
-        features.UnigramRankFeature(ug_all_top),
-        features.PrefixFeature(),
-        features.SuffixFeature(),
-        features.POSTagFeature(pos),
-        features.LDATopicFeature(lda, LDA_WINDOW_LEFT_SIZE, LDA_WINDOW_LEFT_SIZE)
-    ]
-    
-    return result
 
 # ----------------
 

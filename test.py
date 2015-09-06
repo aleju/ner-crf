@@ -28,8 +28,8 @@ from model.pos import PosTagger
 from model.unigrams import Unigrams
 from model.w2v import W2VClusters
 """
-from model.datasets import load_windows, load_articles, Article
-#import model.features as features
+from model.datasets import load_windows, load_articles, create_examples, Article
+import model.features as features
 
 from train import create_features, append_windows
 
@@ -96,7 +96,7 @@ def test_on_articles(identifier, articles):
     # create feature generators
     # this may take a while
     print("Creating features...")
-    features = create_features()
+    features = features.create_features()
     
     # create window generator
     print("Loading windows...")

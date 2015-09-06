@@ -78,6 +78,49 @@ def load_windows(articles, window_size, features=None, every_nth_window=1, only_
                         yield window
                     processed_windows += 1
 
+def generate_examples(windows, nb_append=None, nb_skip=0, verbose=True):
+    """Generates example pairs of feature lists (one per token) and labels.
+    
+    Args:
+        windows: The windows to generate features and labels from, see load_windows().
+        nb_append: How many windows to append max or None if unlimited. (Default is None.)
+        nb_skip: How many windows to skip at the start. (Default is 0.)
+        verbose: Whether to print status messages. (Default is True.)
+    Returns:
+        Pairs of (features, labels),
+        where features is a list of lists of strings,
+            e.g. [["foo=bar", "asd=fgh"], ["foo=not_bar", "yikes=True"], ...]
+        and labels is a list of strings,
+            e.g. ["PER", "O", "O", "LOC", ...].
+    """
+    skipped = 0
+    added = 0
+    for window in windows:
+        # skip the first couple of windows, if nb_skip is > 0
+        if skipped < nb_skip:
+            skipped += 1
+        else:
+            # chain of labels (list of strings)
+            labels = window.get_labels()
+            # chain of features (list of lists of strings)
+            feature_values_lists = []
+            for word_idx in range(len(window.tokens)):
+                fvl = window.get_feature_values_list(word_idx, SKIPCHAIN_LEFT, SKIPCHAIN_RIGHT)
+                feature_values_lists.append(fvl)
+            # yield (features, labels) pair
+            yield (feature_values_lists, labels)
+            
+            # print message every nth window
+            # and stop if nb_append is reached
+            added += 1
+            if verbose and added % 500 == 0:
+                if nb_append is None:
+                    print("Generated %d examples" % (added, nb_append))
+                else:
+                    print("Generated %d of max %d examples" % (added, nb_append))
+            if nb_append is not None and added == nb_append:
+                break
+
 def cleanup_unicode(in_str):
     """Converts unicode strings to ascii.
     The function uses mostly unidecode() and contains some additional mappings for german umlauts.
