@@ -117,7 +117,7 @@ def generate_examples(windows, nb_append=None, nb_skip=0, verbose=True):
             added += 1
             if verbose and added % 500 == 0:
                 if nb_append is None:
-                    print("Generated %d examples" % (added, nb_append))
+                    print("Generated %d examples" % (added))
                 else:
                     print("Generated %d of max %d examples" % (added, nb_append))
             if nb_append is not None and added == nb_append:
