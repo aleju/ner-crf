@@ -133,24 +133,23 @@ def load_germeval(filepath):
         
         # if we reach the next sentence, add the previous sentence to the 'sentences' container
         if (number == 1 and len(sentence) > 0) or line_idx == len(lines) - 1:
-            # we use extend here instead of append to convert everything to one large
-            # sentence, otherwise each sentence would become one document and many of the windows
-            # would turn out to be smaller than the fixed size of 50 tokens.
             sentences.append(sentence)
-            #sentences.extend(sentence)
             sentence = []
         
         # convert all labels containing OTH (OTHER) so MISC
         if "OTH" in tag1:
             tag1 = "MISC"
         
-        # 
-        if any([label in tag1 for label in LABELS]):
+        # Add the word in an annotated way if the tag1 looks like one of the labels in the
+        # allowed labels (config setting LABELS). We don't check for full equality here, because
+        # that allows BIO tags (e.g. B-PER) to also be accepted. They will automatically be
+        # normalized by the Token objects (which will also throw away unnormalizable annotations).
+        # Notice that we ignore tag2 as tag1 is usually the more important one.
+        if any([(label in tag1) for label in LABELS]):
             sentence.append(word + "/" + tag1)
         else:
             sentence.append(word)
 
-    #return [Article(" ".join(sentences))]
     return [Article(" ".join(sentence)) for sentence in sentences]
 
 def bio_classification_report(y_true, y_pred):
