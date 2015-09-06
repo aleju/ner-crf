@@ -1,6 +1,6 @@
 # About
 
-This is an implementation using (linear chain) conditional random fields (CRF) in python 2.7 for named entity recognition (NER). It uses the [python-crfsuite](http://python-crfsuite.readthedocs.org/en/latest/) library as its basis. By default it can handle the labels `PER`, `LOC`, `ORG` and `MISC`, but was primarily optimized for `PER` (recognition of names of people) in german, though it should be usable for any language. Scores are expected to be a bit lower for other labels than `PER`, because the Gazetteer-feature currently only handles `PER` labels. The implementation achieved an F1 score for `PER` of `0.79` on the [Germeval2014NER](https://sites.google.com/site/germeval2014ner/data) corpus (notice that german NER is significantly harder than english NER) and an F1 score of `0.89` (again `PER`) on an automatically annotated Wikipedia corpus (it was trained on an excerpt of that Wikipedia corpus, so a higher score was expected as the Germeval2014Ner is partly different from Wikipedia's style of language).
+This is an implementation using (linear chain) conditional random fields (CRF) in python 2.7 for named entity recognition (NER). It uses the [python-crfsuite](http://python-crfsuite.readthedocs.org/en/latest/) library as its basis. By default it can handle the labels `PER`, `LOC`, `ORG` and `MISC`, but was primarily optimized for `PER` (recognition of names of people) in german, though it should be usable for any language. Scores are expected to be a bit lower for other labels than `PER`, because the Gazetteer-feature currently only handles `PER` labels. The implementation achieved an F1 score for `PER` of `0.78` on the [Germeval2014NER](https://sites.google.com/site/germeval2014ner/data) corpus (notice that german NER is significantly harder than english NER) and an F1 score of `0.87` (again `PER`) on an automatically annotated Wikipedia corpus (it was trained on an excerpt of that Wikipedia corpus, so a higher score was expected as the Germeval2014Ner is partly different from Wikipedia's style of language).
 
 # Used features
 
@@ -50,8 +50,8 @@ You will also need [word2vec](https://code.google.com/p/word2vec/) clusters (can
 # Usage
 
 1. Create a large annotated corpus with the labels `PER`, `LOC`, `ORG`, `MISC` as described above at `Corpus`. You can change these labels in `config.py`, but `PER` is required.
-2. Generate [word2vec](https://code.google.com/p/word2vec/) clusters from a large corpus. Use the flag `-classes` for the word2vec tool. This should result in one file.
-3. Generate [brown clusters](https://github.com/percyliang/brown-cluster) from a large corpus. This should result in several files, including a `paths` file.
+2. Generate [word2vec](https://code.google.com/p/word2vec/) clusters from a large corpus (I used 1000 clusters from 300-component vectors, skipgram, min count 50, window size 10). Use the flag `-classes` for the word2vec tool to generate clusters instead of vectors. This should result in one file.
+3. Generate [brown clusters](https://github.com/percyliang/brown-cluster) from a large corpus (I used 1000 clusters, min count 12). This should result in several files, including a `paths` file.
 4. Install all requirements including the stanford pos tagger
 5. Change all constants (specifically the filepaths) in `config.py` to match your settings. You will have to change `ARTICLES_FILEPATH` (path to your corpus file), `STANFORD_DIR` (root directory of the stanford pos tagger), `STANFORD_POS_JAR_FILEPATH` (stanford pos tagger jar filepath, might be different for your version), `STANFORD_MODEL_FILEPATH` (pos tagging model to use, default is `german-fast`), `W2V_CLUSTERS_FILEPATH` (filepath to your word2vec clusters), `BROWN_CLUSTERS_FILEPATH` (filepath to your brown clusters `paths` file), `COUNT_WINDOWS_TRAIN` (number of examples to train on, might be too many for your corpus), `COUNT_WINDOWS_TEST` (number of examples to test on, might be too many for your corpus), `LABELS` (if you don't use PER, LOC, ORG, MISC as labels, PER though is a requirement).
 6. Run `python -m preprocessing/collect_unigrams` to create lists of unigrams for your corpus. This will take 2 hours or so, especially if your corpus is large.
@@ -61,12 +61,29 @@ You will also need [word2vec](https://code.google.com/p/word2vec/) clusters (can
 
 # Score
 
-             precision    recall  f1-score   support
+Results on the Germeval 2014 NER corpus:
 
-        LOC       0.71      0.39      0.50      2009
-       MISC       0.47      0.04      0.07      1644
-          O       0.94      1.00      0.97     79532
-        ORG       0.79      0.09      0.16      1848
-        PER       0.83      0.75      0.79      2550
+                | precision |   recall | f1-score |  support
+----------------|-----------|----------|----------|----------
+          **O** |      0.97 |     1.00 |     0.98 |    23487
+        **PER** |      0.84 |     0.73 |     0.78 |      525
+----------------|-----------|----------|----------|----------
+**avg / total** |      0.95 |     0.96 |     0.95 |    25002
 
-avg / total       0.92      0.94      0.92     87583
+*Note:* ~1000 tokens are missing, because they belonged to LOC, ORG or MISC. The CRF model was not really trained on these labels and therefore performed poorly. It was only properly trained on PER.
+
+
+Results on an automatically annotated Wikipedia corpus (therefore some PER labels might have been wrong/missing):
+
+                | precision |   recall | f1-score |  support
+----------------|-----------|----------|----------|----------
+          **O** |  0.97     | 0.98     | 0.98     | 182991
+        **PER** |  0.88     | 0.85     | 0.87     | 8856
+----------------|-----------|----------|----------|----------
+**avg / total** |  0.95     | 0.95     | 0.95     | 199283
+
+*Note:* Same as above, LOC, ORG and MISC where removed from the table.
+
+# Licence
+
+MIT
