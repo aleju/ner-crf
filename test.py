@@ -20,10 +20,8 @@ from itertools import chain
 from sklearn.metrics import classification_report
 from sklearn.preprocessing import LabelBinarizer
 
-from model.datasets import load_windows, load_articles, create_examples, Article
+from model.datasets import load_windows, load_articles, generate_examples, Article
 import model.features as features
-
-from train import create_features, append_windows
 
 # All capitalized constants come from this file
 from config import *
@@ -88,11 +86,11 @@ def test_on_articles(identifier, articles):
     # create feature generators
     # this may take a while
     print("Creating features...")
-    features = features.create_features()
+    feature_generators = features.create_features()
     
     # create window generator
     print("Loading windows...")
-    windows = load_windows(articles, WINDOW_SIZE, features, only_labeled_windows=True)
+    windows = load_windows(articles, WINDOW_SIZE, feature_generators, only_labeled_windows=True)
 
     # load feature lists and label lists (X, Y)
     # this may take a while
@@ -138,8 +136,8 @@ def load_germeval(filepath):
             # we use extend here instead of append to convert everything to one large
             # sentence, otherwise each sentence would become one document and many of the windows
             # would turn out to be smaller than the fixed size of 50 tokens.
-            #sentences.append(sentence)
-            sentences.extend(sentence)
+            sentences.append(sentence)
+            #sentences.extend(sentence)
             sentence = []
         
         # convert all labels containing OTH (OTHER) so MISC
@@ -152,7 +150,8 @@ def load_germeval(filepath):
         else:
             sentence.append(word)
 
-    return [Article(" ".join(sentences))]
+    #return [Article(" ".join(sentences))]
+    return [Article(" ".join(sentence)) for sentence in sentences]
 
 def bio_classification_report(y_true, y_pred):
     """

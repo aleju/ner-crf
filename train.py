@@ -13,12 +13,6 @@ import argparse
 import random
 import pycrfsuite
 
-from model.brown import BrownClusters
-from model.gazetteer import Gazetteer
-from model.lda import LdaWrapper
-from model.pos import PosTagger
-from model.unigrams import Unigrams
-from model.w2v import W2VClusters
 from model.datasets import load_windows, load_articles, generate_examples
 import model.features as features
 
@@ -67,12 +61,12 @@ def train(args):
     # Create/Initialize the feature generators
     # this may take a few minutes
     print("Creating features...")
-    features = features.create_features()
+    feature_generators = features.create_features()
     
     # Initialize the window generator
     # each window has a fixed maximum size of tokens
     print("Loading windows...")
-    windows = load_windows(load_articles(ARTICLES_FILEPATH), WINDOW_SIZE, features, only_labeled_windows=True)
+    windows = load_windows(load_articles(ARTICLES_FILEPATH), WINDOW_SIZE, feature_generators, only_labeled_windows=True)
     
     # Add chains of features (each list of lists of strings)
     # and chains of labels (each list of strings)

@@ -2,8 +2,10 @@
 """Functions to load data from the corpus."""
 from __future__ import absolute_import, division, print_function, unicode_literals
 import re
-from unidecode import unidecode
+#from unidecode import unidecode
 from collections import Counter
+
+# All capitalized constants come from this file
 from config import *
 
 def split_to_chunks(of, chunk_size):
@@ -121,26 +123,28 @@ def generate_examples(windows, nb_append=None, nb_skip=0, verbose=True):
             if nb_append is not None and added == nb_append:
                 break
 
-def cleanup_unicode(in_str):
-    """Converts unicode strings to ascii.
-    The function uses mostly unidecode() and contains some additional mappings for german umlauts.
-    
-    Args:
-        in_str: String in UTF-8.
-    Returns:
-        String (ascii).
-    """
-    result = in_str
-
-    mappings = [(u"ü", "ue"), (u"ö", "oe"), (u"ä", "ae"),
-                (u"Ü", "Ue"), (u"Ö", "Oe"), (u"Ä", "Ae"),
-                (u"ß", "ss")]
-    for str_from, str_to in mappings:
-        result = result.replace(str_from, str_to)
-
-    result = unidecode(result)
-
-    return result
+# this was removed to get rid of the unicecode dependency and because the ascii representation
+# of words weren't used anyways
+#def cleanup_unicode(in_str):
+#    """Converts unicode strings to ascii.
+#    The function uses mostly unidecode() and contains some additional mappings for german umlauts.
+#    
+#    Args:
+#        in_str: String in UTF-8.
+#    Returns:
+#        String (ascii).
+#    """
+#    result = in_str
+#
+#    mappings = [(u"ü", "ue"), (u"ö", "oe"), (u"ä", "ae"),
+#                (u"Ü", "Ue"), (u"Ö", "Oe"), (u"Ä", "Ae"),
+#                (u"ß", "ss")]
+#    for str_from, str_to in mappings:
+#        result = result.replace(str_from, str_to)
+#
+#    result = unidecode(result)
+#
+#    return result
 
 class Article(object):
     """Class modelling an article/document from the corpus. It's mostly a wrapper around a list
@@ -285,16 +289,18 @@ class Token(object):
             if end in LABELS:
                 self.word = original[0:pos]
                 self.label = end
-        self._word_ascii = None
+        #self._word_ascii = None
         self.feature_values = None
     
-    @property
-    def word_ascii(self):
-        """Get the ascii value of the token.
-        This has its own function as it takes time to compute and isn't even used currently.
-        Returns:
-            Token string as ASCII.
-        """
-        if self._word_ascii is None:
-            self._word_ascii = cleanup_unicode(self.word)
-        return self._word_ascii
+    # this was removed to get rid of the unicecode dependency and because the ascii representation
+    # of words weren't used anyways
+    #@property
+    #def word_ascii(self):
+    #    """Get the ascii value of the token.
+    #    This has its own function as it takes time to compute and isn't even used currently.
+    #    Returns:
+    #        Token string as ASCII.
+    #    """
+    #    if self._word_ascii is None:
+    #        self._word_ascii = cleanup_unicode(self.word)
+    #    return self._word_ascii

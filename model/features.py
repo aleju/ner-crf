@@ -8,6 +8,16 @@ Contains:
 from __future__ import absolute_import, division, print_function, unicode_literals
 import re
 
+from model.brown import BrownClusters
+from model.gazetteer import Gazetteer
+from model.lda import LdaWrapper
+from model.pos import PosTagger
+from model.unigrams import Unigrams
+from model.w2v import W2VClusters
+
+# All capitalized constants come from this file
+from config import *
+
 def create_features(verbose=True):
     """This method creates all feature generators.
     The feature generators will be used to convert windows of tokens to their string features.
