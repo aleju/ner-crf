@@ -2,11 +2,11 @@
 """
     This file trains an LDA model based on small word windows (e.g. 11 words per window).
     Execute via:
-        python -m preprocessing/collect_unigrams --dict --train
+        python -m preprocessing/lda --dict --train
     List topics of LDA via:
-        python -m preprocessing/collect_unigrams --topics
+        python -m preprocessing/lda --topics
     Test on a sentence via:
-        python -m preprocessing/collect_unigrams --test --sentence="John Doe did something."
+        python -m preprocessing/lda --test --sentence="John Doe did something."
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 import gensim
