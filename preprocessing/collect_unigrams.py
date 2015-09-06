@@ -15,10 +15,12 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import os
 from model.unigrams import Unigrams
+
+# All capitalized constants come from this file
 from config import *
 
 def main():
-    """Main function."""
+    """Main function. Gathers all unigrams and name-unigrams, see documantation at the top."""
     
     # collect all unigrams (all labels, including "O")
     print("Collecting unigrams...")
@@ -34,6 +36,8 @@ def main():
     ug_names.write_to_file(UNIGRAMS_PERSON_FILEPATH)
     
     print("Finished.")
+
+# ---------------
 
 if __name__ == "__main__":
     main()

@@ -14,6 +14,8 @@ from gensim.models.ldamulticore import LdaMulticore
 from model.datasets import load_articles, load_windows
 import sys
 import argparse
+
+# All capitalized constants (except for the few below) come from this file
 from config import *
 
 LDA_CHUNK_SIZE = 10000 #2000 * 100  # docs pro batch in LDA, default ist 2000
@@ -165,6 +167,9 @@ def test_lda(sentence):
     """Tests the trained LDA model on an example sentence, i.e. returns the topics of that
     sentence.
     May only be called after train_lda().
+    
+    Args:
+        sentence: A sentence to test on as string.
     """
     # validate and process the sentence
     if sentence is None or len(sentence) < 1:

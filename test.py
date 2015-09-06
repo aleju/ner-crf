@@ -20,14 +20,6 @@ from itertools import chain
 from sklearn.metrics import classification_report
 from sklearn.preprocessing import LabelBinarizer
 
-"""
-from model.brown import BrownClusters
-from model.gazetteer import Gazetteer
-from model.lda import LdaWrapper
-from model.pos import PosTagger
-from model.unigrams import Unigrams
-from model.w2v import W2VClusters
-"""
 from model.datasets import load_windows, load_articles, create_examples, Article
 import model.features as features
 

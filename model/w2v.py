@@ -4,8 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 class W2VClusters():
     """Encapsulates handling of a word2vec clusters file.
-    The file can be generated with the word2vec tool using the flag "-classes".
-    """
+    The file can be generated with the word2vec tool using the flag "-classes"."""
     def __init__(self, filepath):
         """Initializes a new W2VClusters object.
         Args:
