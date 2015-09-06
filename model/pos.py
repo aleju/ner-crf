@@ -5,13 +5,14 @@ import nltk
 import shelve
 import random
 
-class PosTagger():
+class PosTagger(object):
     """Class that wraps the Stanford POS tagger.
-    
+
     This class uses a shelve cache to store generated results. This speeds up the generation
     of training examples, if the identical corpus, window sizes etc. are used.
     """
-    def __init__(self, stanford_postagger_jar_filepath, stanford_model_filepath, cache_filepath=None):
+    def __init__(self, stanford_postagger_jar_filepath, stanford_model_filepath,
+                 cache_filepath=None):
         """Initialize the Stanford POS tag wrapper.
         Args:
             stanford_postagger_jar_filepath: Filepath to the jar of the stanford tagger,
@@ -22,7 +23,7 @@ class PosTagger():
         """
         self.max_string_length = 2000
         self.min_string_length = 1
-        
+
         self.tagger = nltk.tag.stanford.StanfordPOSTagger(stanford_model_filepath,
                                                           stanford_postagger_jar_filepath,
                                                           encoding="utf-8")
@@ -30,7 +31,7 @@ class PosTagger():
         self.cache_synch_prob = 2 # in percent, 1 to 100
         self.cache_filepath = cache_filepath
         self.cache = shelve.open(cache_filepath) if cache_filepath is not None else None
-    
+
     def tag(self, tokens):
         """Annotate a list of strings with their POS tags.
         Args:
@@ -47,14 +48,13 @@ class PosTagger():
                 return self.cache[_hash]
             else:
                 tagged = self.tag_uncached(tokens)
-                
+
                 self.cache[_hash] = tagged
                 if random.randint(1, 100) <= self.cache_synch_prob:
                     self.synchronize_cache()
-            
+
                 return tagged
-    
-    
+
     def tag_uncached(self, tokens):
         """Annotate a list of strings with their POS tags without querying the cache.
         Args:
@@ -71,9 +71,9 @@ class PosTagger():
         elif total_length < self.min_string_length:
             raise Exception("String to POS-tag is too short (%d vs min "\
                             "%d)." % (total_length, self.min_string_length))
-        
+
         return self.tagger.tag(tokens)
-    
+
     def synchronize_cache(self):
         """Synchronizes the shelve cache on the HDD with the version in the RAM."""
         self.cache.sync()
