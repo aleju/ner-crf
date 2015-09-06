@@ -16,20 +16,20 @@ from model.unigrams import Unigrams
 from model.w2v import W2VClusters
 
 # All capitalized constants come from this file
-from config import *
+import config as cfg
 
 def create_features(verbose=True):
     """This method creates all feature generators.
     The feature generators will be used to convert windows of tokens to their string features.
-    
+
     This function may run for a few minutes.
-    
+
     Args:
         verbose: Whether to output messages.
     Returns:
         List of feature generators
     """
-    
+
     def print_if_verbose(msg):
         """This method prints a message only if verbose was set to True, otherwise does nothing.
         Args:
@@ -37,45 +37,48 @@ def create_features(verbose=True):
         """
         if verbose:
             print(msg)
-    
+
     # Load the most common unigrams. These will be used as features.
     print_if_verbose("Loading top N unigrams...")
-    ug_all_top = Unigrams(UNIGRAMS_FILEPATH, skip_first_n=UNIGRAMS_SKIP_FIRST_N, max_count_words=UNIGRAMS_MAX_COUNT_WORDS)
-    
+    ug_all_top = Unigrams(cfg.UNIGRAMS_FILEPATH, skip_first_n=cfg.UNIGRAMS_SKIP_FIRST_N,
+                          max_count_words=cfg.UNIGRAMS_MAX_COUNT_WORDS)
+
     # Load all unigrams. These will be used to create the Gazetteer.
     print_if_verbose("Loading all unigrams...")
-    ug_all = Unigrams(UNIGRAMS_FILEPATH)
-    
+    ug_all = Unigrams(cfg.UNIGRAMS_FILEPATH)
+
     # Load all unigrams of person names (PER). These will be used to create the Gazetteer.
     print_if_verbose("Loading person name unigrams...")
-    ug_names = Unigrams(UNIGRAMS_PERSON_FILEPATH)
-    
+    ug_names = Unigrams(cfg.UNIGRAMS_PERSON_FILEPATH)
+
     # Create the gazetteer. The gazetteer will contain all names from ug_names that have a higher
     # frequency among those names than among all unigrams (from ug_all).
     print_if_verbose("Creating gazetteer...")
     gaz = Gazetteer(ug_names, ug_all)
-    
+
     # Unset ug_all and ug_names because we don't need them any more and they need quite a bit of
     # RAM.
     ug_all = None
     ug_names = None
-    
+
     # Load the mapping of word to brown cluster and word to brown cluster bitchain
     print_if_verbose("Loading brown clusters...")
-    bc = BrownClusters(BROWN_CLUSTERS_FILEPATH)
-    
+    brown = BrownClusters(cfg.BROWN_CLUSTERS_FILEPATH)
+
     # Load the mapping of word to word2vec cluster
     print_if_verbose("Loading W2V clusters...")
-    w2vc = W2VClusters(W2V_CLUSTERS_FILEPATH)
-    
+    w2vc = W2VClusters(cfg.W2V_CLUSTERS_FILEPATH)
+
     # Load the wrapper for the gensim LDA
     print_if_verbose("Loading LDA...")
-    lda = LdaWrapper(LDA_FILEPATH, LDA_DICTIONARY_FILEPATH, cache_filepath=LDA_CACHE_FILEPATH)
-    
+    lda = LdaWrapper(cfg.LDA_MODEL_FILEPATH, cfg.LDA_DICTIONARY_FILEPATH,
+                     cache_filepath=cfg.LDA_CACHE_FILEPATH)
+
     # Load the wrapper for the stanford POS tagger
     print_if_verbose("Loading POS-Tagger...")
-    pos = PosTagger(STANFORD_POS_JAR_FILEPATH, STANFORD_MODEL_FILEPATH, cache_filepath=POS_TAGGER_CACHE_FILEPATH)
-    
+    pos = PosTagger(cfg.STANFORD_POS_JAR_FILEPATH, cfg.STANFORD_MODEL_FILEPATH,
+                    cache_filepath=cfg.POS_TAGGER_CACHE_FILEPATH)
+
     # create feature generators
     result = [
         StartsWithUppercaseFeature(),
@@ -85,26 +88,25 @@ def create_features(verbose=True):
         OnlyDigitsFeature(),
         OnlyPunctuationFeature(),
         W2VClusterFeature(w2vc),
-        BrownClusterFeature(bc),
-        BrownClusterBitsFeature(bc),
+        BrownClusterFeature(brown),
+        BrownClusterBitsFeature(brown),
         GazetteerFeature(gaz),
         WordPatternFeature(),
         UnigramRankFeature(ug_all_top),
         PrefixFeature(),
         SuffixFeature(),
         POSTagFeature(pos),
-        LDATopicFeature(lda, LDA_WINDOW_LEFT_SIZE, LDA_WINDOW_LEFT_SIZE)
+        LDATopicFeature(lda, cfg.LDA_WINDOW_LEFT_SIZE, cfg.LDA_WINDOW_LEFT_SIZE)
     ]
-    
-    return result
 
+    return result
 
 class StartsWithUppercaseFeature(object):
     """Generates a feature that describes, whether a given token starts with an uppercase letter."""
     def __init__(self):
         """Instantiates a new object of this feature generator."""
         pass
-    
+
     def convert_window(self, window):
         """Converts a Window object into a list of lists of features, where features are strings.
         Args:
@@ -145,11 +147,11 @@ class TokenLengthFeature(object):
             result.append(["l=%d" % (min(len(token.word), self.max_length))])
         return result
 
-class ContainsDigitsFeature(object):    
+class ContainsDigitsFeature(object):
     """Generates a feature that describes, whether a token contains any digit."""
     def __init__(self):
         """Instantiates a new object of this feature generator."""
-        self.regexpContainsDigits = re.compile(r'[0-9]+')
+        self.regexp_contains_digits = re.compile(r'[0-9]+')
 
     def convert_window(self, window):
         """Converts a Window object into a list of lists of features, where features are strings.
@@ -163,14 +165,15 @@ class ContainsDigitsFeature(object):
         """
         result = []
         for token in window.tokens:
-            result.append(["cD=%d" % (int(self.regexpContainsDigits.search(token.word) is not None))])
+            any_digits = self.regexp_contains_digits.search(token.word) is not None
+            result.append(["cD=%d" % (int(any_digits))])
         return result
-    
+
 class ContainsPunctuationFeature(object):
     """Generates a feature that describes, whether a token contains any punctuation."""
     def __init__(self):
         """Instantiates a new object of this feature generator."""
-        self.regexpContainsPunctuation = re.compile(r'[\.\,\:\;\(\)\[\]\?\!]+')
+        self.regexp_contains_punctuation = re.compile(r'[\.\,\:\;\(\)\[\]\?\!]+')
 
     def convert_window(self, window):
         """Converts a Window object into a list of lists of features, where features are strings.
@@ -184,14 +187,15 @@ class ContainsPunctuationFeature(object):
         """
         result = []
         for token in window.tokens:
-            result.append(["cP=%d" % (int(self.regexpContainsPunctuation.search(token.word) is not None))])
+            any_punct = self.regexp_contains_punctuation.search(token.word) is not None
+            result.append(["cP=%d" % (int(any_punct))])
         return result
 
 class OnlyDigitsFeature(object):
     """Generates a feature that describes, whether a token contains only digits."""
     def __init__(self):
         """Instantiates a new object of this feature generator."""
-        self.regexpContainsOnlyDigits = re.compile(r'^[0-9]+$')
+        self.regexp_contains_only_digits = re.compile(r'^[0-9]+$')
 
     def convert_window(self, window):
         """Converts a Window object into a list of lists of features, where features are strings.
@@ -205,14 +209,15 @@ class OnlyDigitsFeature(object):
         """
         result = []
         for token in window.tokens:
-            result.append(["oD=%d" % (int(self.regexpContainsOnlyDigits.search(token.word) is not None))])
+            only_digits = self.regexp_contains_only_digits.search(token.word) is not None
+            result.append(["oD=%d" % (int(only_digits))])
         return result
 
 class OnlyPunctuationFeature(object):
     """Generates a feature that describes, whether a token contains only punctuation."""
     def __init__(self):
         """Instantiates a new object of this feature generator."""
-        self.regexpContainsOnlyPunctuation = re.compile(r'^[\.\,\:\;\(\)\[\]\?\!]+$')
+        self.regexp_contains_only_punctuation = re.compile(r'^[\.\,\:\;\(\)\[\]\?\!]+$')
 
     def convert_window(self, window):
         """Converts a Window object into a list of lists of features, where features are strings.
@@ -226,7 +231,8 @@ class OnlyPunctuationFeature(object):
         """
         result = []
         for token in window.tokens:
-            result.append(["oP=%d" % (int(self.regexpContainsOnlyPunctuation.search(token.word) is not None))])
+            only_punct = self.regexp_contains_only_punctuation.search(token.word) is not None
+            result.append(["oP=%d" % (int(only_punct))])
         return result
 
 class W2VClusterFeature(object):
@@ -253,7 +259,7 @@ class W2VClusterFeature(object):
         for token in window.tokens:
             result.append(["w2v=%d" % (self.token_to_cluster(token))])
         return result
-    
+
     def token_to_cluster(self, token):
         """Converts a token/word to its cluster index among the word2vec clusters.
         Args:
@@ -288,7 +294,7 @@ class BrownClusterFeature(object):
         for token in window.tokens:
             result.append(["bc=%d" % (self.token_to_cluster(token))])
         return result
-    
+
     def token_to_cluster(self, token):
         """Converts a token/word to its cluster index among the brown clusters.
         Args:
@@ -323,7 +329,7 @@ class BrownClusterBitsFeature(object):
         for token in window.tokens:
             result.append(["bcb=%s" % (self.token_to_bitchain(token)[0:7])])
         return result
-    
+
     def token_to_bitchain(self, token):
         """Converts a token/word to its brown cluster bitchain among the brown clusters.
         Args:
@@ -343,7 +349,7 @@ class GazetteerFeature(object):
                 to estimate whether a word is contained in an Gazetteer.
         """
         self.gazetteer = gazetteer
-    
+
     def convert_window(self, window):
         """Converts a Window object into a list of lists of features, where features are strings.
         Args:
@@ -358,7 +364,7 @@ class GazetteerFeature(object):
         for token in window.tokens:
             result.append(["g=%d" % (int(self.is_in_gazetteer(token)))])
         return result
-    
+
     def is_in_gazetteer(self, token):
         """Returns True if the token/word appears in the gazetteer.
         Args:
@@ -385,7 +391,7 @@ class WordPatternFeature(object):
         # if cut off because of maximum length, use this char at the end of the word to signal
         # the cutoff
         self.max_length_char = "~"
-        
+
         self.normalization = [
             (r"[A-ZÄÖÜ]", "A"),
             (r"[a-zäöüß]", "a"),
@@ -394,7 +400,7 @@ class WordPatternFeature(object):
             (r"[\(\)\[\]\{\}]", "("),
             (r"[^Aa9\.\(]", "#")
         ]
-        
+
         # note: we do not map numers to 9+, e.g. years will still be 9999
         self.mappings = [
             (r"[A]{2,}", "A+"),
@@ -418,7 +424,7 @@ class WordPatternFeature(object):
         for token in window.tokens:
             result.append(["wp=%s" % (self.token_to_wordpattern(token))])
         return result
-    
+
     def token_to_wordpattern(self, token):
         """Converts a token/word to its word pattern.
         Args:
@@ -429,15 +435,15 @@ class WordPatternFeature(object):
         normalized = token.word
         for from_regex, to_str in self.normalization:
             normalized = re.sub(from_regex, to_str, normalized)
-        
-        wp = normalized
+
+        wpattern = normalized
         for from_regex, to_str in self.mappings:
-            wp = re.sub(from_regex, to_str, wp)
-        
-        if len(wp) > self.max_length:
-            wp = wp[0:self.max_length] + self.max_length_char
-        
-        return wp
+            wpattern = re.sub(from_regex, to_str, wpattern)
+
+        if len(wpattern) > self.max_length:
+            wpattern = wpattern[0:self.max_length] + self.max_length_char
+
+        return wpattern
 
 class UnigramRankFeature(object):
     """Generates a feature that describes the rank of the word among a list of unigrams, ordered
@@ -465,7 +471,7 @@ class UnigramRankFeature(object):
         for token in window.tokens:
             result.append(["ng1=%d" % (self.token_to_rank(token))])
         return result
-    
+
     def token_to_rank(self, token):
         """Converts a token/word to its unigram rank.
         Args:
@@ -542,11 +548,11 @@ class POSTagFeature(object):
         """
         pos_tags = self.stanford_pos_tag(window)
         result = []
-        for i, token in enumerate(window.tokens):
-            word, pos_tag = pos_tags[i][0], pos_tags[i][1]
+        # _ is the word
+        for _, pos_tag in pos_tags:
             result.append(["pos=%s" % (pos_tag)])
         return result
-    
+
     def stanford_pos_tag(self, window):
         """Converts a Window (list of tokens) to their POS tags.
         Args:
@@ -598,7 +604,7 @@ class LDATopicFeature(object):
                     token_features.append("lda_%d=%s" % (topic_idx, "1"))
             result.append(token_features)
         return result
-    
+
     def get_topics(self, text):
         """Converts a small text window (string) to its LDA topics.
         Args:
