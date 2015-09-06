@@ -96,7 +96,7 @@ def test_on_articles(identifier, articles):
     # this may take a while
     all_feature_values_lists = []
     correct_label_chains = []
-    for fvlist, labels in generate_examples(windows):
+    for fvlist, labels in generate_examples(windows, nb_append=COUNT_WINDOWS_TEST):
         all_feature_values_lists.append(fvlist)
         correct_label_chains.append(labels)
     
@@ -145,7 +145,9 @@ def load_germeval(filepath):
         # that allows BIO tags (e.g. B-PER) to also be accepted. They will automatically be
         # normalized by the Token objects (which will also throw away unnormalizable annotations).
         # Notice that we ignore tag2 as tag1 is usually the more important one.
-        if any([(label in tag1) for label in LABELS]):
+        contains_label = any([(label in tag1) for label in LABELS])
+        is_blacklisted = any([(bl_label in tag1) for bl_label in ["part", "deriv"]])
+        if contains_label and not is_blacklisted:
             sentence.append(word + "/" + tag1)
         else:
             sentence.append(word)
