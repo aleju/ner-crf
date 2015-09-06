@@ -4,12 +4,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import random
 import shelve
 import gensim
-from gensim.models.ldamodel import LdaModel
 from gensim.models.ldamulticore import LdaMulticore
 
-class LdaWrapper():
+class LdaWrapper(object):
     """Class that wraps a previously trained gensim LDA.
-    
+
     This class uses a shelve cache to store generated results. This speeds up the generation
     of training examples, if the identical corpus, window sizes etc. are used.
     """
@@ -25,7 +24,7 @@ class LdaWrapper():
         self.cache_synch_prob = 2 # in percent, 1 to 100
         self.cache_filepath = cache_filepath
         self.cache = shelve.open(cache_filepath) if cache_filepath is not None else None
-    
+
     def get_topics(self, text):
         """Returns the topics of a small string text window.
         Args:
@@ -42,13 +41,13 @@ class LdaWrapper():
                 return self.cache[_hash]
             else:
                 topics = self.get_topics_uncached(text)
-                
+
                 self.cache[_hash] = topics
                 if random.randint(1, 100) <= self.cache_synch_prob:
                     self.synchronize_cache()
-                
+
                 return topics
-            
+
     def get_topics_uncached(self, text):
         """Returns the topics of a small string text window without querying the cache.
         Args:
