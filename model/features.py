@@ -548,9 +548,25 @@ class POSTagFeature(object):
         """
         pos_tags = self.stanford_pos_tag(window)
         result = []
-        # _ is the word
-        for _, pos_tag in pos_tags:
-            result.append(["pos=%s" % (pos_tag)])
+        
+        # catch stupid problems with stanford POS tagger and unicode characters
+        if len(pos_tags) == len(window.tokens):
+            # _ is the word
+            for _, pos_tag in pos_tags:
+                result.append(["pos=%s" % (pos_tag)])
+        else:
+            orig_str = "|".join([token.word for token in window.tokens])
+            pos_str = "|".join([word for word, _ in pos_tags])
+            print("[Info] Stanford POS tagger got sequence of length %d, returned " \
+                  "POS-sequence of length %d. This sometimes happens with special unicode " \
+                  "characters. Returning empty list instead." % (len(window.tokens), len(pos_tags)))
+            print("[Info] Original sequence was:", orig_str)
+            print("[Info] Tagged sequence      :", pos_str)
+
+            # fill with empty feature value lists (one empty list per token)
+            for _ in range(len(window.tokens)):
+                result.append([])
+
         return result
 
     def stanford_pos_tag(self, window):

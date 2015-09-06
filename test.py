@@ -56,7 +56,8 @@ def test_on_mycorpus(args):
         args: Command line arguments as parsed by argparse.ArgumentParser.
     """
     print("Testing on mycorpus (%s)..." % (cfg.ARTICLES_FILEPATH))
-    test_on_articles(args.identifier, load_articles(cfg.ARTICLES_FILEPATH))
+    test_on_articles(args.identifier, load_articles(cfg.ARTICLES_FILEPATH),
+                     nb_append=cfg.COUNT_WINDOWS_TEST)
 
 def test_on_germeval(args):
     """Tests on the germeval corpus.
@@ -69,7 +70,7 @@ def test_on_germeval(args):
     print("Testing on germeval (%s)..." % (cfg.GERMEVAL_FILEPATH))
     test_on_articles(args.identifier, load_germeval(cfg.GERMEVAL_FILEPATH))
 
-def test_on_articles(identifier, articles):
+def test_on_articles(identifier, articles, nb_append=None):
     """Test a trained CRF model on a list of Article objects (annotated text).
 
     Will print a full classification report by label (f1, precision, recall).
@@ -96,7 +97,7 @@ def test_on_articles(identifier, articles):
     # this may take a while
     all_feature_values_lists = []
     correct_label_chains = []
-    for fvlist, labels in generate_examples(windows, nb_append=cfg.COUNT_WINDOWS_TEST):
+    for fvlist, labels in generate_examples(windows, nb_append=nb_append):
         all_feature_values_lists.append(fvlist)
         correct_label_chains.append(labels)
 

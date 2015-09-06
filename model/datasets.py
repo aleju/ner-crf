@@ -162,7 +162,11 @@ class Article(object):
         Args:
             text: The string content of the article/document.
         """
-        text = re.sub(r"[\t ]+", " ", text)
+        # Adding re.UNICODE with \s gets rid of some stupid special unicode whitespaces
+        # That's neccessary, because otherwise the stanford POS tagger will split words at
+        # these whitespaces and then the POS sequences have different lengths from the
+        # token sequences
+        text = re.sub(r"[\t\s]+", " ", text, flags=re.UNICODE)
         tokens_str = [token_str.strip() for token_str in text.strip().split(" ")]
         self.tokens = [Token(token_str) for token_str in tokens_str if len(token_str) > 0]
 

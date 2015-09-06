@@ -77,10 +77,10 @@ Results on an automatically annotated Wikipedia corpus (therefore some PER label
 
                 | precision |   recall | f1-score |  support
 ----------------|-----------|----------|----------|----------
-          **O** |  0.97     | 0.98     | 0.98     | 182991
-        **PER** |  0.88     | 0.85     | 0.87     | 8856
+          **O** |  0.97     | 0.98     | 0.98     | 182952
+        **PER** |  0.88     | 0.85     | 0.87     | 8854
 ----------------|-----------|----------|----------|----------
-**avg / total** |  0.95     | 0.95     | 0.95     | 199283
+**avg / total** |  0.95     | 0.95     | 0.95     | 199239
 
 *Note:* Same as above, LOC, ORG and MISC where removed from the table.
 
